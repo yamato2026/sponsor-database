@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>企業情報</title>
+
+<style>
+
+body{
+font-family:sans-serif;
+margin:40px;
+}
+
+table{
+border-collapse:collapse;
+margin-top:20px;
+}
+
+td,th{
+border:1px solid black;
+padding:10px;
+text-align:center;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1 id="name"></h1>
+
+<p><b>住所：</b><span id="address"></span></p>
+<p><b>メール：</b><span id="email"></span></p>
+<p><b>電話：</b><span id="phone"></span></p>
+
+<img id="map" width="300">
+
+<h2>協賛履歴</h2>
+
+<table>
+
+<tr>
+<th>年度</th>
+<th>状況</th>
+</tr>
+
+<tr>
+<td>2025</td>
+<td id="y2025"></td>
+</tr>
+
+<tr>
+<td>2026</td>
+<td id="y2026"></td>
+</tr>
+
+<tr>
+<td>2027</td>
+<td id="y2027"></td>
+</tr>
+
+<tr>
+<td>2028</td>
+<td id="y2028"></td>
+</tr>
+
+<tr>
+<td>2029</td>
+<td id="y2029"></td>
+</tr>
+
+</table>
+
+<p><b>備考：</b><span id="notes"></span></p>
+
+<script>
+
+const params=new URLSearchParams(location.search);
+const id=params.get("id");
+
+fetch("data/companies.json")
+.then(res=>res.json())
+.then(data=>{
+
+const company=data.find(c=>c.id==id);
+
+document.getElementById("name").textContent=company.name;
+document.getElementById("address").textContent=company.address;
+document.getElementById("email").textContent=company.email;
+document.getElementById("phone").textContent=company.phone;
+document.getElementById("map").src=company.map;
+
+document.getElementById("notes").textContent=company.notes;
+
+for(const year in company.years){
+document.getElementById("y"+year).textContent=company.years[year];
+}
+
+});
+
+</script>
+
+</body>
+</html>
