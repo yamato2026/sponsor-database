@@ -10,9 +10,15 @@ margin-bottom:20px;
 input{
 padding:10px;
 width:300px;
+font-size:16px;
 }
 
 li{
 margin:10px 0;
 cursor:pointer;
+font-size:18px;
+}
+
+li:hover{
+color:blue;
 }
