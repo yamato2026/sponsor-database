@@ -7,11 +7,13 @@ const list = document.getElementById("companyList");
 const search = document.getElementById("search");
 
 function render(filter=""){
+
 list.innerHTML="";
 
 companies
 .filter(c=>c.name.includes(filter))
 .forEach(c=>{
+
 const li=document.createElement("li");
 
 li.textContent=c.name;
@@ -21,6 +23,7 @@ location.href="company.html?id="+c.id;
 };
 
 list.appendChild(li);
+
 });
 
 }
