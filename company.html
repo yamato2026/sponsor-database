@@ -94,9 +94,17 @@ document.getElementById("map").src=company.map;
 document.getElementById("notes").textContent=company.notes;
 
 for(const year in company.years){
-document.getElementById("y"+year).textContent=company.years[year];
-}
 
+const status = company.years[year];
+const cell = document.getElementById("y"+year);
+
+cell.textContent = status;
+
+if(status==="○") cell.className="status-ok";
+if(status==="△") cell.className="status-maybe";
+if(status==="×") cell.className="status-no";
+
+}
 });
 
 </script>
