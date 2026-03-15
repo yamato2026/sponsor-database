@@ -3,24 +3,19 @@ font-family:sans-serif;
 margin:40px;
 }
 
-h1{
-margin-bottom:20px;
-}
-
 input{
-padding:10px;
-width:300px;
-font-size:16px;
+padding:8px;
+margin:10px 0;
 }
 
 li{
-margin:10px 0;
 cursor:pointer;
-font-size:18px;
+margin:5px 0;
 }
 
-li:hover{
-color:blue;
+button{
+padding:8px;
+margin:5px;
 }
 
 .status-ok{
