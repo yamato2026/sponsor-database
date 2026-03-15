@@ -2,10 +2,10 @@
  {
   "id":1,
   "name":"テスト株式会社",
-  "address":"map":"https://maps.google.com/?q=大和大学",
+  "address":"大阪府〇〇市",
   "email":"info@test.co.jp",
   "phone":"06-1234-5678",
-  "map":"map.png",
+  "map":"https://maps.google.com/?q=大和大学",
   "notes":"パンフレット広告",
   "years":{
    "2025":"○",
