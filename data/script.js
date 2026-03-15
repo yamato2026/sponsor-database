@@ -52,4 +52,4 @@ render();
 
 }
 
-
+loadCompanies();
