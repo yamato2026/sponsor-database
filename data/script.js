@@ -13,7 +13,6 @@ const firebaseConfig = {
 
 // 初期化
 firebase.initializeApp(firebaseConfig);
-
 const db = firebase.database();
 
 function login(){
@@ -42,7 +41,7 @@ function render(filter=""){
 list.innerHTML="";
 
 Object.values(companies)
-.filter(c=>c.name.includes(filter))
+.filter(c=>c.name && c.name.includes(filter))
 .forEach(c=>{
 
 const li=document.createElement("li");
@@ -66,6 +65,8 @@ render();
 });
 
 }
+
+// 企業追加
 function addCompany(){
 
 const name = prompt("企業名");
@@ -90,8 +91,5 @@ const company = {
 db.ref("companies/"+id).set(company);
 
 alert("企業追加しました");
-
-}
-});
 
 }
