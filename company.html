@@ -4,7 +4,30 @@
 <meta charset="utf-8">
 <title>企業情報</title>
 
-<link rel="stylesheet" href="data/style.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+body{
+font-family:sans-serif;
+margin:40px;
+}
+
+table{
+border-collapse:collapse;
+margin-top:20px;
+}
+
+td,th{
+border:1px solid black;
+padding:10px;
+text-align:center;
+}
+
+button{
+margin:2px;
+}
+</style>
 
 </head>
 
@@ -12,65 +35,97 @@
 
 <h1 id="name"></h1>
 
-<p><b>住所：</b><span id="address"></span></p>
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
 
-<p>
-<a id="maplink" target="_blank">Googleマップで開く</a>
-</p>
+<a id="maplink" target="_blank">
+<img id="map" width="300">
+</a>
 
 <h2>協賛履歴</h2>
 
-<table border="1">
+<table>
 
 <tr>
 <th>年度</th>
 <th>状況</th>
+<th>変更</th>
 </tr>
 
-<tr><td>2025</td><td id="y2025"></td></tr>
-<tr><td>2026</td><td id="y2026"></td></tr>
-<tr><td>2027</td><td id="y2027"></td></tr>
-<tr><td>2028</td><td id="y2028"></td></tr>
-<tr><td>2029</td><td id="y2029"></td></tr>
+<tr>
+<td>2025</td>
+<td id="y2025"></td>
+<td>
+<button onclick="setYear('2025','○')">○</button>
+<button onclick="setYear('2025','△')">△</button>
+<button onclick="setYear('2025','×')">×</button>
+</td>
+</tr>
+
+<tr>
+<td>2026</td>
+<td id="y2026"></td>
+<td>
+<button onclick="setYear('2026','○')">○</button>
+<button onclick="setYear('2026','△')">△</button>
+<button onclick="setYear('2026','×')">×</button>
+</td>
+</tr>
+
+<tr>
+<td>2027</td>
+<td id="y2027"></td>
+<td>
+<button onclick="setYear('2027','○')">○</button>
+<button onclick="setYear('2027','△')">△</button>
+<button onclick="setYear('2027','×')">×</button>
+</td>
+</tr>
 
 </table>
 
-<p><b>備考：</b><span id="notes"></span></p>
-
 <script>
+
+const firebaseConfig = {
+apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
+authDomain: "teienn-kyousan.firebaseapp.com",
+databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "teienn-kyousan",
+storageBucket: "teienn-kyousan.firebasestorage.app",
+messagingSenderId: "567202456256",
+appId: "1:567202456256:web:156b0587040cbbfaa1c325"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
 const params=new URLSearchParams(location.search);
 const id=params.get("id");
 
-fetch("data/companies.json")
-.then(res=>res.json())
-.then(data=>{
+db.ref("companies/"+id).on("value", snapshot => {
 
-const company=data.find(c=>c.id==id);
+const company=snapshot.val();
 
 document.getElementById("name").textContent=company.name;
-document.getElementById("address").textContent=company.address;
 document.getElementById("email").textContent=company.email;
 document.getElementById("phone").textContent=company.phone;
+
+document.getElementById("map").src=company.map;
 document.getElementById("maplink").href=company.map;
-document.getElementById("notes").textContent=company.notes;
 
-for(const year in company.years){
+const years=company.years||{};
 
-const status=company.years[year];
-const cell=document.getElementById("y"+year);
-
-cell.textContent=status;
-
-if(status==="○") cell.className="status-ok";
-if(status==="△") cell.className="status-maybe";
-if(status==="×") cell.className="status-no";
-
-}
+document.getElementById("y2025").textContent=years["2025"]||"";
+document.getElementById("y2026").textContent=years["2026"]||"";
+document.getElementById("y2027").textContent=years["2027"]||"";
 
 });
+
+function setYear(year,status){
+
+db.ref("companies/"+id+"/years/"+year).set(status);
+
+}
 
 </script>
 
