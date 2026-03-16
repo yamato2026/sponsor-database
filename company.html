@@ -2,115 +2,65 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>企業情報</title>
+<title>協賛企業データベース</title>
+
+<link rel="stylesheet" href="data/style.css">
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <style>
+
 body{
 font-family:sans-serif;
 margin:40px;
 }
 
-table{
-border-collapse:collapse;
-margin-top:20px;
-width:600px;
-}
-
-td,th{
-border:1px solid black;
-padding:10px;
-text-align:center;
-}
-
-input{
-width:100%;
-}
-
 button{
-margin:3px;
+margin:5px;
 }
+
+#stats{
+margin-top:10px;
+font-size:18px;
+}
+
 </style>
 
 </head>
 
 <body>
 
-<h1 id="name"></h1>
+<div id="login">
 
-<button onclick="editCompany()">企業編集</button>
-<button onclick="deleteCompany()">削除</button>
+<h2>ログイン</h2>
 
-<p><b>メール：</b><span id="email"></span></p>
-<p><b>電話：</b><span id="phone"></span></p>
+<input type="password" id="password" placeholder="パスワード">
 
-<a id="maplink" target="_blank">
-<img id="map" width="300">
-</a>
+<button onclick="login()">Log in</button>
 
-<h2>協賛履歴</h2>
+</div>
 
-<table>
+<div id="main" style="display:none">
 
-<tr>
-<th>年度</th>
-<th>状況</th>
-<th>備考</th>
-</tr>
+<h1>協賛企業データベース</h1>
 
-<tr>
-<td>2025</td>
-<td>
-<select id="s2025">
-<option value="">未訪問</option>
-<option value="◎">◎ 協賛</option>
-<option value="○">○ パンフレットのみ</option>
-<option value="△">△ 検討</option>
-<option value="×">× 断り</option>
-</select>
-</td>
-<td>
-<input id="n2025" placeholder="備考">
-</td>
-</tr>
+<input type="text" id="search" placeholder="企業名検索">
 
-<tr>
-<td>2026</td>
-<td>
-<select id="s2026">
-<option value="">未訪問</option>
-<option value="○">○ 協賛</option>
-<option value="△">△ 検討</option>
-<option value="×">× 断り</option>
-</select>
-</td>
-<td>
-<input id="n2026" placeholder="備考">
-</td>
-</tr>
+<br><br>
 
-<tr>
-<td>2027</td>
-<td>
-<select id="s2027">
-<option value="">未訪問</option>
-<option value="○">○ 協賛</option>
-<option value="△">△ 検討</option>
-<option value="×">× 断り</option>
-</select>
-</td>
-<td>
-<input id="n2027" placeholder="備考">
-</td>
-</tr>
+<button onclick="showAll()">全部</button>
+<button onclick="showUnvisited()">未訪問</button>
+<button onclick="showSupport()">協賛</button>
+<button onclick="showMaybe()">検討</button>
 
-</table>
+<button onclick="addCompany()">＋企業追加</button>
 
-<br>
+<div id="stats"></div>
 
-<button onclick="saveYears()">保存</button>
+<ul id="companyList"></ul>
+
+</div>
 
 <script>
 
@@ -127,88 +77,131 @@ appId: "1:567202456256:web:156b0587040cbbfaa1c325"
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const params=new URLSearchParams(location.search);
-const id=params.get("id");
+let companiesData={};
+let filterMode="all";
 
-db.ref("companies/"+id).on("value", snapshot => {
+function login(){
 
-const company=snapshot.val();
+const pass=document.getElementById("password").value;
 
-if(!company){
-alert("企業データが見つかりません");
-location.href="index.html";
-return;
-}
+if(pass==="joie"){
 
-document.getElementById("name").textContent=company.name;
-document.getElementById("email").textContent=company.email;
-document.getElementById("phone").textContent=company.phone;
+document.getElementById("login").style.display="none";
+document.getElementById("main").style.display="block";
 
-if(years[y]){
-
-if(typeof years[y] === "string"){
-
-document.getElementById("s"+y).value = years[y];
+loadCompanies();
 
 }else{
 
-document.getElementById("s"+y).value = years[y].status || "";
-document.getElementById("n"+y).value = years[y].note || "";
+alert("パスワードが違います");
 
 }
 
 }
 
-});
+function loadCompanies(){
+
+const list=document.getElementById("companyList");
+const search=document.getElementById("search");
+
+db.ref("companies").on("value",snapshot=>{
+
+companiesData=snapshot.val()||{};
+render();
 
 });
 
-function saveYears(){
+search.oninput=()=>render();
 
-const data={};
+}
 
-["2025","2026","2027"].forEach(y=>{
+function getStatus(company){
 
-data[y]={
-status:document.getElementById("s"+y).value,
-note:document.getElementById("n"+y).value
+const years=company.years||{};
+const latest=years["2025"]||years["2026"]||years["2027"];
+
+if(!latest) return "";
+
+if(typeof latest==="string") return latest;
+
+return latest.status;
+
+}
+
+function render(){
+
+const list=document.getElementById("companyList");
+const search=document.getElementById("search").value;
+
+list.innerHTML="";
+
+let total=0;
+let support=0;
+
+Object.values(companiesData)
+.filter(c=>c.name && c.name.includes(search))
+.forEach(c=>{
+
+const status=getStatus(c);
+
+if(filterMode==="unvisited" && status!=="") return;
+if(filterMode==="support" && status!=="◎" && status!=="○") return;
+if(filterMode==="maybe" && status!=="△") return;
+
+total++;
+
+if(status==="◎"||status==="○") support++;
+
+const li=document.createElement("li");
+
+li.textContent=c.name+"  ["+(status||"未訪問")+"]";
+
+li.onclick=()=>{
+
+location.href="company.html?id="+c.id;
+
 };
 
+list.appendChild(li);
+
 });
 
-db.ref("companies/"+id+"/years").set(data);
+const rate= total ? Math.round((support/total)*100) : 0;
 
-alert("保存しました");
+document.getElementById("stats").innerText =
+"企業数: "+total+"　協賛: "+support+"　成功率: "+rate+"%";
 
 }
 
-function editCompany(){
+function showAll(){ filterMode="all"; render(); }
+function showUnvisited(){ filterMode="unvisited"; render(); }
+function showSupport(){ filterMode="support"; render(); }
+function showMaybe(){ filterMode="maybe"; render(); }
 
-const name = prompt("企業名", document.getElementById("name").textContent);
-const email = prompt("メール", document.getElementById("email").textContent);
-const phone = prompt("電話", document.getElementById("phone").textContent);
-const map = prompt("GoogleMap URL", document.getElementById("maplink").href);
+function addCompany(){
 
-db.ref("companies/"+id).update({
+const name=prompt("企業名");
+if(!name) return;
+
+const email=prompt("メール");
+const phone=prompt("電話");
+const map=prompt("GoogleMap URL");
+const notes=prompt("備考");
+
+const id=Date.now();
+
+const company={
+id:id,
 name:name,
 email:email,
 phone:phone,
-map:map
-});
+map:map,
+notes:notes
+};
 
-alert("更新しました");
+db.ref("companies/"+id).set(company);
 
-}
-
-function deleteCompany(){
-
-if(!confirm("この企業を削除しますか？")) return;
-
-db.ref("companies/"+id).remove();
-
-alert("削除しました");
-
-location.href="index.html";
+alert("企業追加しました");
 
 }
 
