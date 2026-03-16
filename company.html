@@ -34,6 +34,12 @@ margin:2px;
 <body>
 
 <h1 id="name"></h1>
+<p>
+訪問状況：
+<span id="visitedStatus"></span>
+<button onclick="setVisited(true)">訪問済み</button>
+<button onclick="setVisited(false)">未訪問</button>
+</p>
 <button onclick="editCompany()">編集</button>
 <button onclick="deleteCompany()">削除</button>
 
@@ -120,6 +126,8 @@ document.getElementById("maplink").href=company.map;
 }
 
 const years=company.years||{};
+document.getElementById("visitedStatus").textContent =
+company.visited ? "訪問済み" : "未訪問";
 
 document.getElementById("y2025").textContent=years["2025"]||"";
 document.getElementById("y2026").textContent=years["2026"]||"";
@@ -162,6 +170,12 @@ db.ref("companies/"+id).remove();
 alert("削除しました");
 
 location.href="index.html";
+
+}
+
+function setVisited(status){
+
+db.ref("companies/"+id+"/visited").set(status);
 
 }
 
