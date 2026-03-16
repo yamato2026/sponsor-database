@@ -34,7 +34,8 @@ const search = document.getElementById("search");
 
 db.ref("companies").on("value", snapshot => {
 
-const companies = snapshot.val() || {};
+allCompanies = snapshot.val() || {};
+const companies = allCompanies;
 
 function render(filter=""){
 
