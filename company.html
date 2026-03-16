@@ -16,6 +16,7 @@ margin:40px;
 table{
 border-collapse:collapse;
 margin-top:20px;
+width:600px;
 }
 
 td,th{
@@ -24,8 +25,12 @@ padding:10px;
 text-align:center;
 }
 
+input{
+width:100%;
+}
+
 button{
-margin:2px;
+margin:3px;
 }
 </style>
 
@@ -34,16 +39,10 @@ margin:2px;
 <body>
 
 <h1 id="name"></h1>
-<p>
-訪問状況：
-<span id="visitedStatus"></span>
-<button onclick="setVisited(true)">訪問済み</button>
-<button onclick="setVisited(false)">未訪問</button>
-</p>
-<button onclick="editCompany()">編集</button>
+
+<button onclick="editCompany()">企業編集</button>
 <button onclick="deleteCompany()">削除</button>
 
-<p><b>住所：</b><span id="address"></span></p>
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
 
@@ -58,40 +57,59 @@ margin:2px;
 <tr>
 <th>年度</th>
 <th>状況</th>
-<th>変更</th>
+<th>備考</th>
 </tr>
 
 <tr>
 <td>2025</td>
-<td id="y2025"></td>
 <td>
-<button onclick="setYear('2025','○')">○</button>
-<button onclick="setYear('2025','△')">△</button>
-<button onclick="setYear('2025','×')">×</button>
+<select id="s2025">
+<option value="">未訪問</option>
+<option value="○">○ 協賛</option>
+<option value="△">△ 検討</option>
+<option value="×">× 断り</option>
+</select>
+</td>
+<td>
+<input id="n2025" placeholder="備考">
 </td>
 </tr>
 
 <tr>
 <td>2026</td>
-<td id="y2026"></td>
 <td>
-<button onclick="setYear('2026','○')">○</button>
-<button onclick="setYear('2026','△')">△</button>
-<button onclick="setYear('2026','×')">×</button>
+<select id="s2026">
+<option value="">未訪問</option>
+<option value="○">○ 協賛</option>
+<option value="△">△ 検討</option>
+<option value="×">× 断り</option>
+</select>
+</td>
+<td>
+<input id="n2026" placeholder="備考">
 </td>
 </tr>
 
 <tr>
 <td>2027</td>
-<td id="y2027"></td>
 <td>
-<button onclick="setYear('2027','○')">○</button>
-<button onclick="setYear('2027','△')">△</button>
-<button onclick="setYear('2027','×')">×</button>
+<select id="s2027">
+<option value="">未訪問</option>
+<option value="○">○ 協賛</option>
+<option value="△">△ 検討</option>
+<option value="×">× 断り</option>
+</select>
+</td>
+<td>
+<input id="n2027" placeholder="備考">
 </td>
 </tr>
 
 </table>
+
+<br>
+
+<button onclick="saveYears()">保存</button>
 
 <script>
 
@@ -115,8 +133,13 @@ db.ref("companies/"+id).on("value", snapshot => {
 
 const company=snapshot.val();
 
+if(!company){
+alert("企業データが見つかりません");
+location.href="index.html";
+return;
+}
+
 document.getElementById("name").textContent=company.name;
-document.getElementById("address").textContent=company.address || "";
 document.getElementById("email").textContent=company.email;
 document.getElementById("phone").textContent=company.phone;
 
@@ -126,32 +149,48 @@ document.getElementById("maplink").href=company.map;
 }
 
 const years=company.years||{};
-document.getElementById("visitedStatus").textContent =
-company.visited ? "訪問済み" : "未訪問";
 
-document.getElementById("y2025").textContent=years["2025"]||"";
-document.getElementById("y2026").textContent=years["2026"]||"";
-document.getElementById("y2027").textContent=years["2027"]||"";
+["2025","2026","2027"].forEach(y=>{
+
+if(years[y]){
+
+document.getElementById("s"+y).value=years[y].status||"";
+document.getElementById("n"+y).value=years[y].note||"";
+
+}
 
 });
 
-function setYear(year,status){
+});
 
-db.ref("companies/"+id+"/years/"+year).set(status);
+function saveYears(){
+
+const data={};
+
+["2025","2026","2027"].forEach(y=>{
+
+data[y]={
+status:document.getElementById("s"+y).value,
+note:document.getElementById("n"+y).value
+};
+
+});
+
+db.ref("companies/"+id+"/years").set(data);
+
+alert("保存しました");
 
 }
 
 function editCompany(){
 
 const name = prompt("企業名", document.getElementById("name").textContent);
-const address = prompt("住所", document.getElementById("address").textContent);
 const email = prompt("メール", document.getElementById("email").textContent);
 const phone = prompt("電話", document.getElementById("phone").textContent);
 const map = prompt("GoogleMap URL", document.getElementById("maplink").href);
 
 db.ref("companies/"+id).update({
 name:name,
-address:address,
 email:email,
 phone:phone,
 map:map
@@ -170,12 +209,6 @@ db.ref("companies/"+id).remove();
 alert("削除しました");
 
 location.href="index.html";
-
-}
-
-function setVisited(status){
-
-db.ref("companies/"+id+"/visited").set(status);
 
 }
 
