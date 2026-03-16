@@ -3,10 +3,26 @@
 <head>
 <meta charset="utf-8">
 <title>協賛企業データベース</title>
-<link rel="stylesheet" href="data/style.css">
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+body{
+font-family:sans-serif;
+margin:40px;
+}
+
+button{
+margin:5px;
+}
+
+#stats{
+margin-top:10px;
+font-size:18px;
+font-weight:bold;
+}
+</style>
 
 </head>
 
@@ -27,20 +43,194 @@
 <h1>協賛企業データベース</h1>
 
 <input type="text" id="search" placeholder="企業名検索">
+
 <button onclick="showSponsors()">協賛あり企業</button>
 <button onclick="showAll()">全企業</button>
 
 <button onclick="addCompany()">＋企業追加</button>
 
 <div id="stats"></div>
-  
+
 <button onclick="exportCSV()">CSVバックアップ</button>
 
 <ul id="companyList"></ul>
 
 </div>
 
-<script src="data/script.js"></script>
+<script>
+
+const firebaseConfig = {
+apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
+authDomain: "teienn-kyousan.firebaseapp.com",
+databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
+projectId: "teienn-kyousan",
+storageBucket: "teienn-kyousan.firebasestorage.app",
+messagingSenderId: "567202456256",
+appId: "1:567202456256:web:156b0587040cbbfaa1c325"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+let companiesData={};
+let filter="all";
+
+function login(){
+
+const pass=document.getElementById("password").value;
+
+if(pass==="joie"){
+
+document.getElementById("login").style.display="none";
+document.getElementById("main").style.display="block";
+
+loadCompanies();
+
+}else{
+
+alert("パスワードが違います");
+
+}
+
+}
+
+function loadCompanies(){
+
+const search=document.getElementById("search");
+
+db.ref("companies").on("value",snapshot=>{
+
+companiesData=snapshot.val()||{};
+render();
+
+});
+
+search.oninput=render;
+
+}
+
+function getStatus(company){
+
+const years=company.years||{};
+const y=years["2025"];
+
+if(!y) return "";
+
+if(typeof y==="string") return y;
+
+return y.status;
+
+}
+
+function render(){
+
+const list=document.getElementById("companyList");
+const search=document.getElementById("search").value;
+
+list.innerHTML="";
+
+let total=0;
+let support=0;
+
+Object.values(companiesData)
+.filter(c=>c.name && c.name.includes(search))
+.forEach(c=>{
+
+const status=getStatus(c);
+
+if(filter==="support" && status!=="◎" && status!=="○") return;
+
+const li=document.createElement("li");
+
+li.textContent=c.name+" ["+(status||"未訪問")+"]";
+
+li.onclick=()=>{
+
+location.href="company.html?id="+c.id;
+
+};
+
+list.appendChild(li);
+
+if(status){
+total++;
+}
+
+if(status==="◎"||status==="○"){
+support++;
+}
+
+});
+
+const rate = total ? Math.round((support/total)*100) : 0;
+
+document.getElementById("stats").innerText =
+"2025 協賛率： "+support+" / "+total+"  ("+rate+"%)";
+
+}
+
+function showSponsors(){
+
+filter="support";
+render();
+
+}
+
+function showAll(){
+
+filter="all";
+render();
+
+}
+
+function addCompany(){
+
+const name=prompt("企業名");
+if(!name) return;
+
+const email=prompt("メール");
+const phone=prompt("電話");
+const map=prompt("GoogleMap URL");
+const notes=prompt("備考");
+
+const id=Date.now();
+
+const company={
+id:id,
+name:name,
+email:email,
+phone:phone,
+map:map,
+notes:notes
+};
+
+db.ref("companies/"+id).set(company);
+
+alert("企業追加しました");
+
+}
+
+function exportCSV(){
+
+let csv="企業名,メール,電話\n";
+
+Object.values(companiesData).forEach(c=>{
+
+csv+=`${c.name||""},${c.email||""},${c.phone||""}\n`;
+
+});
+
+const blob=new Blob([csv],{type:"text/csv"});
+const url=URL.createObjectURL(blob);
+
+const a=document.createElement("a");
+a.href=url;
+a.download="companies.csv";
+a.click();
+
+}
+
+</script>
 
 </body>
 </html>
