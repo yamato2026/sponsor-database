@@ -1,39 +1,47 @@
-let companies=[];
+alert("script読み込み成功");
+
+// Firebase設定
+const firebaseConfig = {
+  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
+  authDomain: "teienn-kyousan.firebaseapp.com",
+  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "teienn-kyousan",
+  storageBucket: "teienn-kyousan.firebasestorage.app",
+  messagingSenderId: "567202456256",
+  appId: "1:567202456256:web:156b0587040cbbfaa1c325"
+};
+
+// 初期化
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.database();
 
 function login(){
+const pass = document.getElementById("password").value;
 
-const pass=document.getElementById("password").value;
-
-if(pass==="joie"){
-
+if(pass === "joie"){
 document.getElementById("login").style.display="none";
 document.getElementById("main").style.display="block";
-
 loadCompanies();
-
 }else{
-
 alert("パスワードが違います");
-
+}
 }
 
-}
+function loadCompanies(){
 
-async function loadCompanies(){
+const list = document.getElementById("companyList");
+const search = document.getElementById("search");
 
-const res=await fetch("data/companies.json");
-companies=await res.json();
+db.ref("companies").on("value", snapshot => {
 
-render();
-
-}
+const companies = snapshot.val() || [];
 
 function render(filter=""){
 
-const list=document.getElementById("companyList");
 list.innerHTML="";
 
-companies
+Object.values(companies)
 .filter(c=>c.name.includes(filter))
 .forEach(c=>{
 
@@ -42,109 +50,18 @@ const li=document.createElement("li");
 li.textContent=c.name;
 
 li.onclick=()=>{
-
 location.href="company.html?id="+c.id;
-
 };
-
-const edit=document.createElement("button");
-edit.textContent="編集";
-
-edit.onclick=(e)=>{
-e.stopPropagation();
-editCompany(c.id);
-};
-
-const del=document.createElement("button");
-del.textContent="削除";
-
-del.onclick=(e)=>{
-e.stopPropagation();
-deleteCompany(c.id);
-};
-
-li.appendChild(edit);
-li.appendChild(del);
 
 list.appendChild(li);
 
 });
-
 }
 
-document.addEventListener("input",e=>{
+search.oninput=()=>render(search.value);
 
-if(e.target.id==="search"){
-render(e.target.value);
-}
+render();
 
 });
-
-function addCompany(){
-
-const name=prompt("企業名");
-if(!name) return;
-
-const address=prompt("住所");
-const email=prompt("メール");
-
-const id=Date.now();
-
-const company={
-id:id,
-name:name,
-address:address,
-email:email,
-phone:"",
-map:"",
-notes:"",
-years:{
-"2025":"",
-"2026":"",
-"2027":"",
-"2028":"",
-"2029":""
-}
-};
-
-companies.push(company);
-
-showJSON();
-
-}
-
-function editCompany(id){
-
-const company=companies.find(c=>c.id===id);
-
-company.name=prompt("企業名",company.name);
-company.address=prompt("住所",company.address);
-company.email=prompt("メール",company.email);
-company.phone=prompt("電話",company.phone);
-company.notes=prompt("備考",company.notes);
-
-showJSON();
-render();
-
-}
-
-function deleteCompany(id){
-
-if(!confirm("削除しますか？")) return;
-
-companies=companies.filter(c=>c.id!==id);
-
-showJSON();
-render();
-
-}
-
-function showJSON(){
-
-const text=JSON.stringify(companies,null,2);
-
-console.log(text);
-
-alert("コンソールに新しいJSONを出しました。\nコピーして companies.json を更新してください");
 
 }
