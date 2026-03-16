@@ -64,6 +64,11 @@ font-size:18px;
 
 <script>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<script>
+
 const firebaseConfig = {
 apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
 authDomain: "teienn-kyousan.firebaseapp.com",
@@ -77,134 +82,42 @@ appId: "1:567202456256:web:156b0587040cbbfaa1c325"
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-let companiesData={};
-let filterMode="all";
+const params=new URLSearchParams(location.search);
+const id=params.get("id");
 
-function login(){
+db.ref("companies/"+id).once("value",snapshot=>{
 
-const pass=document.getElementById("password").value;
+const company=snapshot.val();
 
-if(pass==="joie"){
+document.getElementById("name").textContent=company.name;
+document.getElementById("address").textContent=company.address||"";
+document.getElementById("email").textContent=company.email||"";
+document.getElementById("phone").textContent=company.phone||"";
+document.getElementById("map").src=company.map||"";
+document.getElementById("maplink").href=company.map||"";
 
-document.getElementById("login").style.display="none";
-document.getElementById("main").style.display="block";
-
-loadCompanies();
-
-}else{
-
-alert("パスワードが違います");
-
-}
-
-}
-
-function loadCompanies(){
-
-const list=document.getElementById("companyList");
-const search=document.getElementById("search");
-
-db.ref("companies").on("value",snapshot=>{
-
-companiesData=snapshot.val()||{};
-render();
-
-});
-
-search.oninput=()=>render();
-
-}
-
-function getStatus(company){
+document.getElementById("notes").textContent=company.notes||"";
 
 const years=company.years||{};
-const latest=years["2025"]||years["2026"]||years["2027"];
 
-if(!latest) return "";
+for(const year in years){
 
-if(typeof latest==="string") return latest;
+const status=years[year];
+const cell=document.getElementById("y"+year);
 
-return latest.status;
+if(!cell) continue;
+
+cell.textContent=status;
+
+if(status==="○") cell.className="status-ok";
+if(status==="△") cell.className="status-maybe";
+if(status==="×") cell.className="status-no";
 
 }
-
-function render(){
-
-const list=document.getElementById("companyList");
-const search=document.getElementById("search").value;
-
-list.innerHTML="";
-
-let total=0;
-let support=0;
-
-Object.values(companiesData)
-.filter(c=>c.name && c.name.includes(search))
-.forEach(c=>{
-
-const status=getStatus(c);
-
-if(filterMode==="unvisited" && status!=="") return;
-if(filterMode==="support" && status!=="◎" && status!=="○") return;
-if(filterMode==="maybe" && status!=="△") return;
-
-total++;
-
-if(status==="◎"||status==="○") support++;
-
-const li=document.createElement("li");
-
-li.textContent=c.name+"  ["+(status||"未訪問")+"]";
-
-li.onclick=()=>{
-
-location.href="company.html?id="+c.id;
-
-};
-
-list.appendChild(li);
 
 });
 
-const rate= total ? Math.round((support/total)*100) : 0;
-
-document.getElementById("stats").innerText =
-"企業数: "+total+"　協賛: "+support+"　成功率: "+rate+"%";
-
-}
-
-function showAll(){ filterMode="all"; render(); }
-function showUnvisited(){ filterMode="unvisited"; render(); }
-function showSupport(){ filterMode="support"; render(); }
-function showMaybe(){ filterMode="maybe"; render(); }
-
-function addCompany(){
-
-const name=prompt("企業名");
-if(!name) return;
-
-const email=prompt("メール");
-const phone=prompt("電話");
-const map=prompt("GoogleMap URL");
-const notes=prompt("備考");
-
-const id=Date.now();
-
-const company={
-id:id,
-name:name,
-email:email,
-phone:phone,
-map:map,
-notes:notes
-};
-
-db.ref("companies/"+id).set(company);
-
-alert("企業追加しました");
-
-}
-
+</script>
 </script>
 
 </body>
