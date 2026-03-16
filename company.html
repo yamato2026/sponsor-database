@@ -34,6 +34,8 @@ margin:2px;
 <body>
 
 <h1 id="name"></h1>
+<button onclick="editCompany()">編集</button>
+<button onclick="deleteCompany()">削除</button>
 
 <p><b>メール：</b><span id="email"></span></p>
 <p><b>電話：</b><span id="phone"></span></p>
@@ -124,6 +126,36 @@ document.getElementById("y2027").textContent=years["2027"]||"";
 function setYear(year,status){
 
 db.ref("companies/"+id+"/years/"+year).set(status);
+
+}
+
+function editCompany(){
+
+const name = prompt("企業名を変更", document.getElementById("name").textContent);
+const email = prompt("メールを変更", document.getElementById("email").textContent);
+const phone = prompt("電話を変更", document.getElementById("phone").textContent);
+const map = prompt("GoogleMap URL", document.getElementById("maplink").href);
+
+db.ref("companies/"+id).update({
+name:name,
+email:email,
+phone:phone,
+map:map
+});
+
+alert("更新しました");
+
+}
+
+function deleteCompany(){
+
+if(!confirm("この企業を削除しますか？")) return;
+
+db.ref("companies/"+id).remove();
+
+alert("削除しました");
+
+location.href="index.html";
 
 }
 
