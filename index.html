@@ -8,50 +8,30 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <style>
-body{
-font-family:sans-serif;
-margin:40px;
-}
-
-button{
-margin:5px;
-}
-
-#stats{
-margin-top:10px;
-font-size:18px;
-font-weight:bold;
-}
+body{font-family:sans-serif;margin:40px;background:#f5f5f5;}
+button{margin:5px;padding:10px;border:none;background:#2c7be5;color:white;border-radius:5px;}
+li{background:white;margin:5px 0;padding:10px;border-radius:5px;cursor:pointer;}
 </style>
-
 </head>
 
 <body>
 
 <div id="login">
-
 <h2>ログイン</h2>
-
-<input type="password" id="password" placeholder="パスワード">
-
-<button onclick="login()">Log in</button>
-
+<input type="password" id="password">
+<button onclick="login()">ログイン</button>
 </div>
 
 <div id="main" style="display:none">
 
 <h1>協賛企業データベース</h1>
 
-<input type="text" id="search" placeholder="企業名検索">
+<input type="text" id="search" placeholder="検索">
 
-<button onclick="showSponsors()">協賛あり企業</button>
-<button onclick="showAll()">全企業</button>
-
-<button onclick="addCompany()">＋企業追加</button>
-
-<div id="stats"></div>
-
-<button onclick="exportCSV()">CSVバックアップ</button>
+<button onclick="showSponsors()">協賛あり</button>
+<button onclick="showAll()">全て</button>
+<button onclick="addCompany()">＋追加</button>
+<button onclick="exportCSV()">CSV</button>
 
 <ul id="companyList"></ul>
 
@@ -59,34 +39,142 @@ font-weight:bold;
 
 <script>
 
-function login(){
+let allCompanies = {};
 
-const pass=document.getElementById("password").value;
+// Firebase
+const firebaseConfig = {
+ apiKey: "AIza...",
+ databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ログイン
+function login(){
+const pass = document.getElementById("password").value;
 
 if(pass==="joie"){
-
-location.href="index.html?auth=ok";
-
+ localStorage.setItem("loggedin","true");
+ document.getElementById("login").style.display="none";
+ document.getElementById("main").style.display="block";
+ loadCompanies();
 }else{
+ alert("間違ったパスワードが入力されました");
+}
+}
 
-alert("パスワードが違います");
+// 自動ログイン
+if(localStorage.getItem("loggedin")==="true"){
+ document.getElementById("login").style.display="none";
+ document.getElementById("main").style.display="block";
+ loadCompanies();
+}
+
+// 読み込み
+function loadCompanies(){
+
+db.ref("companies").on("value", snap=>{
+ allCompanies = snap.val() || {};
+ render();
+});
 
 }
 
+// 描画
+function render(filter=""){
+
+const list = document.getElementById("companyList");
+list.innerHTML="";
+
+Object.values(allCompanies)
+.filter(c=>c.name && c.name.includes(filter))
+.forEach(c=>{
+
+const li=document.createElement("li");
+li.textContent=c.name;
+
+li.onclick=()=>{
+ location.href="company.html?id="+c.id;
+};
+
+list.appendChild(li);
+
+});
+
 }
 
-const params=new URLSearchParams(location.search);
+// 検索
+document.getElementById("search").oninput = e=>{
+render(e.target.value);
+};
 
-if(params.get("auth")==="ok"){
+// 協賛あり
+function showSponsors(){
+render(""); // 一旦全部表示してから絞る
 
-document.getElementById("login").style.display="none";
-document.getElementById("main").style.display="block";
+const list = document.getElementById("companyList");
+list.innerHTML="";
 
-loadCompanies();
+Object.values(allCompanies)
+.filter(c => c.years && Object.values(c.years).includes("○"))
+.forEach(c=>{
+const li=document.createElement("li");
+li.textContent=c.name;
+li.onclick=()=>location.href="company.html?id="+c.id;
+list.appendChild(li);
+});
+}
+
+// 全部
+function showAll(){
+render();
+}
+
+// 追加
+function addCompany(){
+
+const name = prompt("企業名");
+if(!name) return;
+
+const id = Date.now();
+
+db.ref("companies/"+id).set({
+ id:id,
+ name:name,
+ address:prompt("住所"),
+ email:prompt("メール"),
+ phone:prompt("電話"),
+ map:prompt("GoogleMap URL"),
+ notes:prompt("備考"),
+ years:{
+  "2025":"",
+  "2026":"",
+  "2027":"",
+  "2028":"",
+  "2029":""
+ }
+});
+
+alert("追加OK");
+}
+
+// CSV
+function exportCSV(){
+
+let csv="企業名,住所,メール,電話\n";
+
+Object.values(allCompanies).forEach(c=>{
+csv += `"${c.name||""}","${c.address||""}","${c.email||""}","${c.phone||""}"\n`;
+});
+
+const blob = new Blob([csv]);
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="companies.csv";
+a.click();
 
 }
 
 </script>
-
 </body>
 </html>
