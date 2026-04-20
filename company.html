@@ -25,10 +25,14 @@ button{
 }
 button:hover{background:#1a5dc9;}
 
-ul{
- list-style:none;
- padding:0;
+input{
+ padding:10px;
+ width:100%;
+ max-width:400px;
+ margin-bottom:10px;
 }
+
+ul{list-style:none;padding:0;}
 
 li{
  background:white;
@@ -37,17 +41,19 @@ li{
  border-radius:5px;
  cursor:pointer;
  box-shadow:0 2px 5px rgba(0,0,0,0.1);
+ display:flex;
+ justify-content:space-between;
+ align-items:center;
 }
+
+.status-ok{color:green;font-weight:bold;}
+.status-maybe{color:orange;font-weight:bold;}
+.status-no{color:red;font-weight:bold;}
 
 .status{
- margin-left:10px;
  font-weight:bold;
+ margin-left:10px;
 }
-
-/* 色だけ */
-.status-ok{color:green;}
-.status-maybe{color:orange;}
-.status-no{color:red;}
 </style>
 </head>
 
@@ -121,7 +127,7 @@ function loadCompanies(){
 }
 
 // =========================
-// 表示（クリックなし版）
+// 表示
 // =========================
 function render(filter=""){
 
@@ -134,25 +140,27 @@ Object.values(allCompanies)
 
 const li = document.createElement("li");
 
-let years = c.years || {"2025":""};
+// 年度
+let years = c.years || {};
 const latestYear = Object.keys(years).sort().slice(-1)[0];
-const status = years[latestYear] || "";
 
-// 色だけ
+const status = latestYear ? years[latestYear] : "";
+
+// 色
 let cls = "";
 if(status==="○") cls="status-ok";
 if(status==="△") cls="status-maybe";
 if(status==="×") cls="status-no";
 
-// ★ここ重要：クリック一切なし
-const span = document.createElement("span");
-span.textContent = `${latestYear}:${status}`;
-span.className = "status " + cls;
+// 表示（クリックなし・完全表示専用）
+li.innerHTML = `
+ <span>${c.name}</span>
+ <span class="status ${cls}">
+  ${latestYear ? latestYear + ":" + (status || "未") : "未登録"}
+ </span>
+`;
 
-// 本体クリック（詳細ページ）
-li.textContent = c.name + " ";
-li.appendChild(span);
-
+// 詳細へ
 li.onclick = ()=>{
  location.href="company.html?id="+c.id;
 };
@@ -167,7 +175,7 @@ list.appendChild(li);
 // 検索
 // =========================
 document.getElementById("search").oninput = e=>{
- render(e.target.value);
+render(e.target.value);
 };
 
 // =========================
