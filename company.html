@@ -6,6 +6,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
 <style>
 body{font-family:sans-serif;margin:40px;}
@@ -113,7 +114,10 @@ input,select{
 
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
- databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
+ authDomain: "teienn-kyousan.firebaseapp.com",
+ databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
+ projectId: "teienn-kyousan",
+ storageBucket: "teienn-kyousan.appspot.com"
 };
 
 if(!firebase.apps.length){
@@ -121,6 +125,7 @@ if(!firebase.apps.length){
 }
 
 const db = firebase.database();
+const storage = firebase.storage();
 const id = new URLSearchParams(location.search).get("id");
 
 // =========================
@@ -142,14 +147,18 @@ function load(){
    (c.map||"").startsWith("http") ? c.map : "#";
 
   // =========================
-  // PDF（安定版）
+  // PDF（URL方式）
   // =========================
-  const url = c.pdfUrl || "";
   const btn = document.getElementById("pdfBtn");
 
-  if(url){
+  if(c.pdfUrl){
    btn.textContent = "PDFを見る";
-   btn.onclick = ()=> window.open(url, "_blank");
+   btn.onclick = ()=>{
+    const a = document.createElement("a");
+    a.href = c.pdfUrl;
+    a.target = "_blank";
+    a.click();
+   };
   }else{
    btn.textContent = "未登録";
    btn.onclick = null;
@@ -273,7 +282,7 @@ function load(){
 }
 
 // =========================
-// PDFアップロード（base64）
+// PDFアップロード（URL方式）
 // =========================
 function uploadPDF(){
 
@@ -281,25 +290,27 @@ function uploadPDF(){
  fileInput.type = "file";
  fileInput.accept = "application/pdf";
 
- fileInput.onchange = (e)=>{
+ fileInput.onchange = async (e)=>{
 
   const file = e.target.files[0];
   if(!file) return;
 
-  const reader = new FileReader();
+  const ref = storage.ref(
+   "pdfs/"+id+"/"+Date.now()+"_"+file.name
+  );
 
-  reader.onload = async function(){
+  console.log("upload start");
 
-   await db.ref("companies/"+id).update({
-    pdfUrl: reader.result
-   });
+  await ref.put(file);
 
-   alert("PDF登録完了");
-   load();
+  const url = await ref.getDownloadURL();
 
-  };
+  await db.ref("companies/"+id).update({
+   pdfUrl: url
+  });
 
-  reader.readAsDataURL(file);
+  alert("PDF登録完了");
+  load();
 
  };
 
