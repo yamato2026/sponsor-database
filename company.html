@@ -118,6 +118,30 @@ load();
 // 初期表示
 load();
 
+function deleteCompany(){
+
+// URLからID取得
+const id = new URLSearchParams(location.search).get("id");
+
+// 確認
+if(!confirm("本当に削除する？")) return;
+
+// 削除
+db.ref("companies/"+id).remove()
+.then(()=>{
+
+ alert("削除しました");
+
+ // 一覧へ戻る
+ location.href="index.html";
+
+})
+.catch(()=>{
+ alert("削除失敗");
+});
+
+}
+
 </script>
 
 </body>
