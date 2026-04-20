@@ -197,6 +197,33 @@ load();
  });
 }
 
+function changeStatus(year){
+
+ db.ref("companies/"+id).once("value", snap=>{
+
+  const c = snap.val() || {};
+  let years = c.years || {};
+
+  if(Object.keys(years).length === 0){
+   years = {"2025":""};
+  }
+
+  const current = years[year] || "";
+
+  let next = "";
+
+  if(current==="") next="○";
+  else if(current==="○") next="△";
+  else if(current==="△") next="×";
+  else if(current==="×") next="";
+
+  db.ref("companies/"+id+"/years/"+year).set(next);
+
+  load();
+
+ });
+}
+
 </script>
 
 </body>
