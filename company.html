@@ -20,7 +20,6 @@ button{
  border-radius:5px;
  cursor:pointer;
 }
-
 button:hover{background:#1a5dc9;}
 .delete-btn{background:red;}
 
@@ -42,7 +41,6 @@ input,select{
  box-sizing:border-box;
 }
 
-/* 備考横スクロール */
 .note-scroll{
  max-width:300px;
  overflow-x:auto;
@@ -60,7 +58,6 @@ input,select{
  border-radius:4px;
 }
 
-/* PDF */
 .pdf-box{
  margin-top:10px;
  padding:10px;
@@ -131,7 +128,7 @@ const storage = firebase.storage();
 const id = new URLSearchParams(location.search).get("id");
 
 // =========================
-// 読み込み
+// 読み込み（初期ロック版）
 // =========================
 function load(){
 
@@ -148,12 +145,10 @@ function load(){
   document.getElementById("maplink").href =
    (c.map||"").startsWith("http") ? c.map : "#";
 
-  // PDF
   const pdf = document.getElementById("pdfLink");
   pdf.href = c.pdfUrl || "#";
   pdf.textContent = c.pdfUrl ? "PDFを見る" : "未登録";
 
-  // 年度
   const years = c.years || {};
   const table = document.getElementById("yearTable");
   table.innerHTML = "";
@@ -163,6 +158,9 @@ function load(){
    const d = years[y] || {status:"",amount:0,notes:""};
 
    const tr = document.createElement("tr");
+
+   // ★初期ロック
+   let locked = true;
 
    // 年度
    const tdYear = document.createElement("td");
@@ -180,6 +178,7 @@ function load(){
    });
 
    select.value = d.status || "";
+   select.disabled = true;
 
    select.onchange = ()=>{
     db.ref("companies/"+id+"/years/"+y+"/status")
@@ -193,6 +192,7 @@ function load(){
    const inputA = document.createElement("input");
    inputA.type = "number";
    inputA.value = d.amount || 0;
+   inputA.disabled = true;
 
    inputA.onchange = ()=>{
     db.ref("companies/"+id+"/years/"+y+"/amount")
@@ -201,7 +201,7 @@ function load(){
 
    tdAmount.appendChild(inputA);
 
-   // 備考
+   // 備考（横スクロール）
    const tdNotes = document.createElement("td");
 
    const wrap = document.createElement("div");
@@ -211,6 +211,7 @@ function load(){
    inputN.type = "text";
    inputN.value = d.notes || "";
    inputN.style.minWidth = "400px";
+   inputN.disabled = true;
 
    inputN.onchange = ()=>{
     db.ref("companies/"+id+"/years/"+y+"/notes")
@@ -220,13 +221,11 @@ function load(){
    wrap.appendChild(inputN);
    tdNotes.appendChild(wrap);
 
-   // 編集ボタン（修正済み）
+   // 編集ボタン
    const tdEdit = document.createElement("td");
 
    const editBtn = document.createElement("button");
    editBtn.textContent = "編集";
-
-   let locked = true;
 
    editBtn.onclick = ()=>{
 
@@ -353,7 +352,7 @@ function editCompany(){
 // =========================
 function deleteCompany(){
 
- if(!confirm("本当に削除しますか？")) return;
+ if(!confirm("削除？")) return;
 
  db.ref("companies/"+id).remove()
  .then(()=>location.href="index.html");
