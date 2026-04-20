@@ -43,6 +43,7 @@ button:hover{background:#1a5dc9;}
 <tr><td>2027</td><td id="y2027" onclick="changeStatus('2027')"></td></tr>
 <tr><td>2028</td><td id="y2028" onclick="changeStatus('2028')"></td></tr>
 <tr><td>2029</td><td id="y2029" onclick="changeStatus('2029')"></td></tr>
+
 </table>
 
 <h2>備考</h2>
@@ -85,7 +86,7 @@ function load(){
 
   const years = c.years || {};
 
-  Object.keys(years).sort().forEach(y=>{
+  Object.keys(years).forEach(y=>{
    const cell = document.getElementById("y"+y);
    if(!cell) return;
 
@@ -130,12 +131,14 @@ function changeStatus(year){
  });
 }
 
-// 年度追加
+// 年度追加 ← ちゃんと外にある
 function addYear(){
+
  const year = prompt("追加する年度（例：2030）");
  if(!year) return;
 
  db.ref("companies/"+id+"/years/"+year).set("");
+
  load();
 }
 
