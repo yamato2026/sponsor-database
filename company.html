@@ -6,7 +6,6 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 
 <style>
 body{font-family:sans-serif;margin:40px;}
@@ -114,8 +113,7 @@ input,select{
 
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
- databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
- storageBucket: "teienn-kyousan.appspot.com"
+ databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
 if(!firebase.apps.length){
@@ -123,8 +121,6 @@ if(!firebase.apps.length){
 }
 
 const db = firebase.database();
-const storage = firebase.storage();
-
 const id = new URLSearchParams(location.search).get("id");
 
 // =========================
@@ -145,19 +141,22 @@ function load(){
   document.getElementById("maplink").href =
    (c.map||"").startsWith("http") ? c.map : "#";
 
-  // ★PDF（完全修正）
+  // =========================
+  // PDF表示（base64）
+  // =========================
   const pdf = document.getElementById("pdfLink");
-  const url = c.pdfUrl || "";
 
-  if(url){
-   pdf.href = url;
-   pdf.textContent = "PDFダウンロード";
+  if(c.pdfUrl){
+   pdf.href = c.pdfUrl;
+   pdf.textContent = "PDFを見る";
   }else{
    pdf.href = "#";
    pdf.textContent = "未登録";
   }
 
+  // =========================
   // 年度
+  // =========================
   const years = c.years || {};
   const table = document.getElementById("yearTable");
   table.innerHTML = "";
@@ -273,7 +272,7 @@ function load(){
 }
 
 // =========================
-// PDFアップロード（原因切り分け強化）
+// PDFアップロード（base64方式）
 // =========================
 function uploadPDF(){
 
@@ -281,36 +280,27 @@ function uploadPDF(){
  fileInput.type = "file";
  fileInput.accept = "application/pdf";
 
- fileInput.onchange = async (e)=>{
+ fileInput.onchange = (e)=>{
 
   const file = e.target.files[0];
   if(!file) return;
 
-  try{
+  const reader = new FileReader();
 
-   const path = `pdfs/${id}/${Date.now()}_${file.name}`;
-   const ref = storage.ref(path);
+  reader.onload = async function(){
 
-   console.log("upload start");
-
-   await ref.put(file);
-
-   const url = await ref.getDownloadURL();
-
-   console.log("PDF URL:",url);
+   const base64 = reader.result;
 
    await db.ref("companies/"+id).update({
-    pdfUrl:url
+    pdfUrl: base64
    });
 
-   alert("PDF登録完了");
-
+   alert("PDF保存完了");
    load();
 
-  }catch(err){
-   console.error(err);
-   alert("PDFアップロード失敗（Storageルール or 設定確認）");
-  }
+  };
+
+  reader.readAsDataURL(file);
 
  };
 
@@ -335,7 +325,7 @@ function addYear(){
 }
 
 // =========================
-// 企業編集
+// 編集
 // =========================
 function editCompany(){
 
