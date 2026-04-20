@@ -85,7 +85,7 @@ input,select{
 
 <h2>企業PDF</h2>
 <div class="pdf-box">
- <button id="pdfBtn">未登録</button>
+ <a id="pdfLink">未登録</a>
  <br><br>
  <button onclick="uploadPDF()">PDFアップロード</button>
 </div>
@@ -147,21 +147,17 @@ function load(){
    (c.map||"").startsWith("http") ? c.map : "#";
 
   // =========================
-  // PDF（URL方式）
+  // PDF（スマホ完全対応）
   // =========================
-  const btn = document.getElementById("pdfBtn");
+  const pdf = document.getElementById("pdfLink");
 
   if(c.pdfUrl){
-   btn.textContent = "PDFを見る";
-   btn.onclick = ()=>{
-    const a = document.createElement("a");
-    a.href = c.pdfUrl;
-    a.target = "_blank";
-    a.click();
-   };
+   pdf.textContent = "PDFを見る";
+   pdf.href = c.pdfUrl;
+   pdf.target = "_blank";
   }else{
-   btn.textContent = "未登録";
-   btn.onclick = null;
+   pdf.textContent = "未登録";
+   pdf.removeAttribute("href");
   }
 
   // =========================
@@ -361,7 +357,7 @@ function editCompany(){
 // =========================
 function deleteCompany(){
 
- if(!confirm("削除？")) return;
+ if(!confirm("本当に削除しますか？")) return;
 
  db.ref("companies/"+id).remove()
  .then(()=>location.href="index.html");
