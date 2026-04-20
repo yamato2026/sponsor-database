@@ -1,35 +1,345 @@
-const tdStatus = document.createElement("td");
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>企業情報</title>
 
-const select = document.createElement("select");
-select.disabled = !isEdit;
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
-// 空
-const opt0 = document.createElement("option");
-opt0.value = "";
-opt0.textContent = "";
+<style>
+body{font-family:sans-serif;margin:40px;}
 
-const opt1 = document.createElement("option");
-opt1.value = "○";
-opt1.textContent = "○";
+button{
+ padding:10px;
+ margin:5px;
+ border:none;
+ background:#2c7be5;
+ color:white;
+ border-radius:5px;
+ cursor:pointer;
+}
 
-const opt2 = document.createElement("option");
-opt2.value = "△";
-opt2.textContent = "△";
+button:hover{background:#1a5dc9;}
+.delete-btn{background:red;}
 
-const opt3 = document.createElement("option");
-opt3.value = "×";
-opt3.textContent = "×";
+.status-ok{color:green;font-weight:bold;}
+.status-maybe{color:orange;font-weight:bold;}
+.status-no{color:red;font-weight:bold;}
 
-select.appendChild(opt0);
-select.appendChild(opt1);
-select.appendChild(opt2);
-select.appendChild(opt3);
+table{
+ border-collapse:collapse;
+ margin-top:20px;
+ width:100%;
+}
 
-select.value = d.status || "";
+td,th{
+ border:1px solid #333;
+ padding:10px;
+ text-align:center;
+}
 
-select.onchange = ()=>{
- db.ref("companies/"+id+"/years/"+y+"/status")
- .set(select.value);
+input, select{
+ width:100%;
+ padding:5px;
+ box-sizing:border-box;
+}
+
+/* 横スクロール備考 */
+.note-scroll{
+ max-width:300px;
+ overflow-x:auto;
+ white-space:nowrap;
+ border:1px solid #ddd;
+ padding:5px;
+ background:#fff;
+}
+
+/* 編集不可時 */
+.locked input,
+.locked select{
+ pointer-events:none;
+ background:#f5f5f5;
+}
+
+/* ボタン */
+.small-btn{
+ background:red;
+ color:white;
+ padding:5px 8px;
+ border:none;
+ border-radius:4px;
+ cursor:pointer;
+}
+
+.edit-btn{background:#28a745;}
+.done-btn{background:#ff9800;}
+</style>
+
+</head>
+
+<body>
+
+<button onclick="location.href='index.html'">←戻る</button>
+<button onclick="editCompany()">編集</button>
+<button onclick="deleteCompany()" class="delete-btn">削除</button>
+<button onclick="addYear()">年度追加</button>
+
+<h1 id="name"></h1>
+
+<p><b>住所：</b><span id="address"></span></p>
+<p><b>メール：</b><span id="email"></span></p>
+<p><b>電話：</b><span id="phone"></span></p>
+
+<p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
+
+<h2>協賛履歴</h2>
+
+<table>
+<thead>
+<tr>
+<th>年度</th>
+<th>状況</th>
+<th>金額</th>
+<th>備考</th>
+<th>編集</th>
+<th>削除</th>
+</tr>
+</thead>
+
+<tbody id="yearTable"></tbody>
+</table>
+
+<h2>備考（企業全体）</h2>
+<p id="notes"></p>
+
+<script>
+
+const firebaseConfig = {
+ apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
+ databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
-tdStatus.appendChild(select);
+if(!firebase.apps.length){
+ firebase.initializeApp(firebaseConfig);
+}
+
+const db = firebase.database();
+const id = new URLSearchParams(location.search).get("id");
+
+// 編集状態
+let editState = {};
+
+// =========================
+// 読み込み
+// =========================
+function load(){
+
+ db.ref("companies/"+id).once("value", snap=>{
+  const c = snap.val();
+
+  if(!c){
+   alert("データなし");
+   return;
+  }
+
+  document.getElementById("name").textContent = c.name || "";
+  document.getElementById("address").textContent = c.address || "";
+  document.getElementById("email").textContent = c.email || "";
+  document.getElementById("phone").textContent = c.phone || "";
+  document.getElementById("notes").textContent = c.notes || "";
+
+  const map = c.map || "";
+  document.getElementById("maplink").href =
+   map.startsWith("http") ? map : "#";
+
+  let years = c.years || {};
+
+  const table = document.getElementById("yearTable");
+  table.innerHTML = "";
+
+  Object.keys(years).sort().forEach(y=>{
+
+   const d = years[y] || {status:"",amount:0,notes:""};
+
+   const isEdit = editState[y] === true;
+
+   const tr = document.createElement("tr");
+
+   if(!isEdit) tr.classList.add("locked");
+
+   // 年度
+   const tdYear = document.createElement("td");
+   tdYear.textContent = y;
+
+   // 状態（セレクト）
+   const tdStatus = document.createElement("td");
+
+   const select = document.createElement("select");
+
+   ["","○","△","×"].forEach(v=>{
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    select.appendChild(opt);
+   });
+
+   select.value = d.status || "";
+   select.disabled = !isEdit;
+
+   select.onchange = ()=>{
+    db.ref("companies/"+id+"/years/"+y+"/status")
+    .set(select.value);
+   };
+
+   tdStatus.appendChild(select);
+
+   // 金額
+   const tdAmount = document.createElement("td");
+   const inputAmount = document.createElement("input");
+   inputAmount.type = "number";
+   inputAmount.value = d.amount || 0;
+   inputAmount.disabled = !isEdit;
+
+   inputAmount.onchange = ()=>{
+    db.ref("companies/"+id+"/years/"+y+"/amount")
+    .set(Number(inputAmount.value));
+   };
+
+   tdAmount.appendChild(inputAmount);
+
+   // 備考（横スクロール）
+   const tdNotes = document.createElement("td");
+
+   const wrapper = document.createElement("div");
+   wrapper.className = "note-scroll";
+
+   const inputNotes = document.createElement("input");
+   inputNotes.type = "text";
+   inputNotes.value = d.notes || "";
+   inputNotes.style.minWidth = "400px";
+   inputNotes.disabled = !isEdit;
+
+   inputNotes.onchange = ()=>{
+    db.ref("companies/"+id+"/years/"+y+"/notes")
+    .set(inputNotes.value);
+   };
+
+   wrapper.appendChild(inputNotes);
+   tdNotes.appendChild(wrapper);
+
+   // 編集ボタン
+   const tdEdit = document.createElement("td");
+   const editBtn = document.createElement("button");
+
+   editBtn.textContent = isEdit ? "完了" : "編集";
+   editBtn.className = isEdit ? "done-btn" : "edit-btn";
+
+   editBtn.onclick = ()=>{
+    editState[y] = !editState[y];
+    load();
+   };
+
+   tdEdit.appendChild(editBtn);
+
+   // 削除
+   const tdDelete = document.createElement("td");
+   const btn = document.createElement("button");
+   btn.textContent = "削除";
+   btn.className = "small-btn";
+
+   btn.onclick = (e)=>{
+    e.stopPropagation();
+    deleteYear(y);
+   };
+
+   tdDelete.appendChild(btn);
+
+   tr.appendChild(tdYear);
+   tr.appendChild(tdStatus);
+   tr.appendChild(tdAmount);
+   tr.appendChild(tdNotes);
+   tr.appendChild(tdEdit);
+   tr.appendChild(tdDelete);
+
+   table.appendChild(tr);
+
+  });
+
+ });
+
+}
+
+// =========================
+// 年度追加
+// =========================
+function addYear(){
+
+ const y = prompt("年度");
+ if(!y) return;
+
+ db.ref("companies/"+id+"/years/"+y).set({
+  status:"",
+  amount:0,
+  notes:""
+ });
+
+ load();
+}
+
+// =========================
+// 年度削除
+// =========================
+function deleteYear(y){
+
+ if(!confirm(y+"年削除？")) return;
+
+ db.ref("companies/"+id+"/years/"+y).remove()
+ .then(()=>load());
+}
+
+// =========================
+// 企業編集
+// =========================
+function editCompany(){
+
+ db.ref("companies/"+id).once("value", snap=>{
+  const c = snap.val();
+
+  const name = prompt("企業名", c.name || "");
+  const address = prompt("住所", c.address || "");
+  const email = prompt("メール", c.email || "");
+  const phone = prompt("電話", c.phone || "");
+  const map = prompt("GoogleMap", c.map || "");
+  const notes = prompt("備考", c.notes || "");
+
+  db.ref("companies/"+id).update({
+   name,address,email,phone,map,notes
+  });
+
+  load();
+
+ });
+
+}
+
+// =========================
+// 削除
+// =========================
+function deleteCompany(){
+
+ if(!confirm("削除する？")) return;
+
+ db.ref("companies/"+id).remove()
+ .then(()=>{
+  location.href="index.html";
+ });
+
+}
+
+load();
+
+</script>
+
+</body>
+</html>
