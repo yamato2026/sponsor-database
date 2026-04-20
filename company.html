@@ -53,7 +53,6 @@ input{
  background:#fff;
 }
 
-/* ロック状態 */
 .locked{
  background:#f5f5f5;
  cursor:pointer;
@@ -126,11 +125,7 @@ function load(){
 
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
-
-  if(!c){
-   alert("データなし");
-   return;
-  }
+  if(!c) return;
 
   document.getElementById("name").textContent = c.name || "";
   document.getElementById("address").textContent = c.address || "";
@@ -166,7 +161,7 @@ function load(){
    if(d.status==="△") tdStatus.className="status-maybe";
    if(d.status==="×") tdStatus.className="status-no";
 
-   // 金額（ロック付き）
+   // 金額
    const tdAmount = document.createElement("td");
    const inputAmount = document.createElement("input");
 
@@ -175,11 +170,19 @@ function load(){
    inputAmount.disabled = true;
    inputAmount.classList.add("locked");
 
+   // クリック編集
    inputAmount.onclick = ()=>{
     if(confirm("金額を編集しますか？")){
      inputAmount.disabled = false;
      inputAmount.focus();
     }
+   };
+
+   // ダブルクリック即編集
+   inputAmount.ondblclick = (e)=>{
+    e.stopPropagation();
+    inputAmount.disabled = false;
+    inputAmount.focus();
    };
 
    inputAmount.onchange = ()=>{
@@ -191,7 +194,7 @@ function load(){
 
    tdAmount.appendChild(inputAmount);
 
-   // 備考（ロック＋横スクロール）
+   // 備考
    const tdNotes = document.createElement("td");
 
    const wrapper = document.createElement("div");
@@ -205,11 +208,19 @@ function load(){
    inputNotes.classList.add("locked");
    inputNotes.style.minWidth = "400px";
 
+   // クリック編集
    inputNotes.onclick = ()=>{
     if(confirm("備考を編集しますか？")){
      inputNotes.disabled = false;
      inputNotes.focus();
     }
+   };
+
+   // ダブルクリック即編集
+   inputNotes.ondblclick = (e)=>{
+    e.stopPropagation();
+    inputNotes.disabled = false;
+    inputNotes.focus();
    };
 
    inputNotes.onchange = ()=>{
@@ -291,7 +302,7 @@ function addYear(){
 }
 
 // =========================
-// 年度削除
+// 削除
 // =========================
 function deleteYear(y){
 
