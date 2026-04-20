@@ -147,17 +147,17 @@ function load(){
    (c.map||"").startsWith("http") ? c.map : "#";
 
   // =========================
-  // PDF（スマホ完全対応）
+  // PDF（Storage方式）
   // =========================
   const pdf = document.getElementById("pdfLink");
 
   if(c.pdfUrl){
-   pdf.textContent = "PDFを見る";
    pdf.href = c.pdfUrl;
+   pdf.textContent = "PDFを見る";
    pdf.target = "_blank";
   }else{
-   pdf.textContent = "未登録";
    pdf.removeAttribute("href");
+   pdf.textContent = "未登録";
   }
 
   // =========================
@@ -278,7 +278,7 @@ function load(){
 }
 
 // =========================
-// PDFアップロード（URL方式）
+// PDFアップロード（Storage正規）
 // =========================
 function uploadPDF(){
 
