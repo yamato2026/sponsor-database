@@ -2,396 +2,218 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>企業情報</title>
+<title>協賛企業データベース</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <style>
-
-/* =========================
-  全体レイアウト
-========================= */
 body{
  font-family:sans-serif;
- margin:0;
- background:#f4f6f9;
-}
-
-.container{
- max-width:1000px;
- margin:40px auto;
- background:white;
- padding:20px;
- border-radius:10px;
- box-shadow:0 2px 10px rgba(0,0,0,0.1);
-}
-
-/* =========================
-  ヘッダー
-========================= */
-h1{
- margin-top:0;
-}
-
-/* =========================
-  ボタン
-========================= */
-.top-bar{
- display:flex;
- flex-wrap:wrap;
- gap:10px;
- margin-bottom:20px;
+ margin:40px;
+ background:#f5f5f5;
 }
 
 button{
- padding:10px 15px;
- border:none;
- border-radius:6px;
- background:#2c7be5;
- color:white;
- cursor:pointer;
-}
-
-button:hover{
- background:#1a5dc9;
-}
-
-.delete-btn{
- background:red;
-}
-
-/* =========================
-  基本情報
-========================= */
-.info{
- margin-bottom:20px;
-}
-
-.info p{
- margin:5px 0;
-}
-
-/* =========================
-  テーブル
-========================= */
-table{
- width:100%;
- border-collapse:collapse;
- margin-top:10px;
- background:white;
- border-radius:8px;
- overflow:hidden;
-}
-
-th{
- background:#2c7be5;
- color:white;
- padding:12px;
-}
-
-td{
  padding:10px;
- border-bottom:1px solid #eee;
-}
-
-tr:hover{
- background:#f1f5ff;
-}
-
-/* =========================
-  入力
-========================= */
-input,select{
- width:100%;
- padding:6px;
- border:1px solid #ddd;
- border-radius:5px;
- box-sizing:border-box;
-}
-
-/* =========================
-  横スクロール備考
-========================= */
-.note-scroll{
- max-width:300px;
- overflow-x:auto;
- white-space:nowrap;
-}
-
-/* =========================
-  削除ボタン小
-========================= */
-.small-btn{
- background:red;
- color:white;
- padding:5px 8px;
+ margin:5px;
  border:none;
- border-radius:4px;
+ background:#2c7be5;
+ color:white;
+ border-radius:5px;
  cursor:pointer;
 }
-.small-btn:hover{
- opacity:0.8;
+button:hover{background:#1a5dc9;}
+
+ul{
+ list-style:none;
+ padding:0;
 }
 
-</style>
+li{
+ background:white;
+ padding:15px;
+ margin-bottom:10px;
+ border-radius:5px;
+ cursor:pointer;
+ box-shadow:0 2px 5px rgba(0,0,0,0.1);
+}
 
+.status{
+ margin-left:10px;
+ font-weight:bold;
+}
+
+/* 色だけ */
+.status-ok{color:green;}
+.status-maybe{color:orange;}
+.status-no{color:red;}
+</style>
 </head>
 
 <body>
 
-<div class="container">
-
-<!-- =========================
-  ボタンエリア
-========================= -->
-<div class="top-bar">
-<button onclick="location.href='index.html'">←戻る</button>
-<button onclick="editCompany()">編集</button>
-<button onclick="deleteCompany()" class="delete-btn">削除</button>
-<button onclick="addYear()">年度追加</button>
+<div id="login">
+<h2>ログイン</h2>
+<input type="password" id="password">
+<button onclick="login()">ログイン</button>
 </div>
 
-<!-- =========================
-  基本情報
-========================= -->
-<h1 id="name"></h1>
+<div id="main" style="display:none">
 
-<div class="info">
-<p><b>住所：</b><span id="address"></span></p>
-<p><b>メール：</b><span id="email"></span></p>
-<p><b>電話：</b><span id="phone"></span></p>
-<p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
-</div>
+<h1>協賛企業データベース</h1>
 
-<!-- =========================
-  年度テーブル
-========================= -->
-<h2>協賛履歴</h2>
+<input type="text" id="search" placeholder="検索">
 
-<table>
-<thead>
-<tr>
-<th>年度</th>
-<th>状況</th>
-<th>金額</th>
-<th>備考</th>
-<th>編集</th>
-<th>削除</th>
-</tr>
-</thead>
+<button onclick="addCompany()">＋追加</button>
+<button onclick="exportCSV()">CSV</button>
+<button onclick="location.href='totals.html'">協賛金額</button>
 
-<tbody id="yearTable"></tbody>
-</table>
-
-<!-- =========================
-  企業備考
-========================= -->
-<h2>備考（企業全体）</h2>
-<p id="notes"></p>
+<ul id="companyList"></ul>
 
 </div>
 
 <script>
 
+let allCompanies = {};
+
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
- authDomain: "teienn-kyousan.firebaseapp.com",
- databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app",
- projectId: "teienn-kyousan"
+ databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
-if(!firebase.apps.length){
+if (!firebase.apps.length) {
  firebase.initializeApp(firebaseConfig);
 }
 
 const db = firebase.database();
-const id = new URLSearchParams(location.search).get("id");
+
+// =========================
+// ログイン
+// =========================
+function login(){
+ const pass = document.getElementById("password").value;
+
+ if(pass==="joie"){
+  localStorage.setItem("loggedin","true");
+  document.getElementById("login").style.display="none";
+  document.getElementById("main").style.display="block";
+  loadCompanies();
+ }else{
+  alert("パスワードが違います");
+ }
+}
+
+if(localStorage.getItem("loggedin")==="true"){
+ document.getElementById("login").style.display="none";
+ document.getElementById("main").style.display="block";
+ loadCompanies();
+}
 
 // =========================
 // 読み込み
 // =========================
-function load(){
-
- db.ref("companies/"+id).once("value", snap=>{
-  const c = snap.val();
-  if(!c) return;
-
-  document.getElementById("name").textContent = c.name || "";
-  document.getElementById("address").textContent = c.address || "";
-  document.getElementById("email").textContent = c.email || "";
-  document.getElementById("phone").textContent = c.phone || "";
-  document.getElementById("notes").textContent = c.notes || "";
-
-  document.getElementById("maplink").href =
-   (c.map||"").startsWith("http") ? c.map : "#";
-
-  const years = c.years || {};
-  const table = document.getElementById("yearTable");
-  table.innerHTML = "";
-
-  Object.keys(years).sort().forEach(y=>{
-
-   const d = years[y] || {status:"",amount:0,notes:""};
-
-   const tr = document.createElement("tr");
-
-   let locked = true;
-
-   const tdYear = document.createElement("td");
-   tdYear.textContent = y;
-
-   const tdStatus = document.createElement("td");
-   const select = document.createElement("select");
-
-   ["","○","△","×"].forEach(v=>{
-    const opt = document.createElement("option");
-    opt.value = v;
-    opt.textContent = v;
-    select.appendChild(opt);
-   });
-
-   select.value = d.status || "";
-   select.disabled = true;
-
-   select.onchange = ()=>{
-    db.ref("companies/"+id+"/years/"+y+"/status")
-    .set(select.value);
-   };
-
-   tdStatus.appendChild(select);
-
-   const tdAmount = document.createElement("td");
-   const inputA = document.createElement("input");
-   inputA.type = "number";
-   inputA.value = d.amount || 0;
-   inputA.disabled = true;
-
-   inputA.onchange = ()=>{
-    db.ref("companies/"+id+"/years/"+y+"/amount")
-    .set(Number(inputA.value));
-   };
-
-   tdAmount.appendChild(inputA);
-
-   const tdNotes = document.createElement("td");
-
-   const wrap = document.createElement("div");
-   wrap.className = "note-scroll";
-
-   const inputN = document.createElement("input");
-   inputN.type = "text";
-   inputN.value = d.notes || "";
-   inputN.style.minWidth = "400px";
-   inputN.disabled = true;
-
-   inputN.onchange = ()=>{
-    db.ref("companies/"+id+"/years/"+y+"/notes")
-    .set(inputN.value);
-   };
-
-   wrap.appendChild(inputN);
-   tdNotes.appendChild(wrap);
-
-   const tdEdit = document.createElement("td");
-
-   const editBtn = document.createElement("button");
-   editBtn.textContent = "編集";
-
-   editBtn.onclick = ()=>{
-
-    locked = !locked;
-
-    select.disabled = locked;
-    inputA.disabled = locked;
-    inputN.disabled = locked;
-
-    editBtn.textContent = locked ? "編集" : "完了";
-
-   };
-
-   tdEdit.appendChild(editBtn);
-
-   const tdDel = document.createElement("td");
-
-   const btn = document.createElement("button");
-   btn.textContent = "削除";
-   btn.className = "small-btn";
-
-   btn.onclick = ()=>{
-    if(!confirm(y+"削除？")) return;
-    db.ref("companies/"+id+"/years/"+y).remove().then(load);
-   };
-
-   tdDel.appendChild(btn);
-
-   tr.appendChild(tdYear);
-   tr.appendChild(tdStatus);
-   tr.appendChild(tdAmount);
-   tr.appendChild(tdNotes);
-   tr.appendChild(tdEdit);
-   tr.appendChild(tdDel);
-
-   table.appendChild(tr);
-
-  });
-
+function loadCompanies(){
+ db.ref("companies").on("value", snap=>{
+  allCompanies = snap.val() || {};
+  render();
  });
+}
+
+// =========================
+// 表示（クリックなし版）
+// =========================
+function render(filter=""){
+
+const list = document.getElementById("companyList");
+list.innerHTML="";
+
+Object.values(allCompanies)
+.filter(c=>c.name && c.name.includes(filter))
+.forEach(c=>{
+
+const li = document.createElement("li");
+
+let years = c.years || {"2025":""};
+const latestYear = Object.keys(years).sort().slice(-1)[0];
+const status = years[latestYear] || "";
+
+// 色だけ
+let cls = "";
+if(status==="○") cls="status-ok";
+if(status==="△") cls="status-maybe";
+if(status==="×") cls="status-no";
+
+// ★ここ重要：クリック一切なし
+const span = document.createElement("span");
+span.textContent = `${latestYear}:${status}`;
+span.className = "status " + cls;
+
+// 本体クリック（詳細ページ）
+li.textContent = c.name + " ";
+li.appendChild(span);
+
+li.onclick = ()=>{
+ location.href="company.html?id="+c.id;
+};
+
+list.appendChild(li);
+
+});
 
 }
 
 // =========================
-// 年度追加
+// 検索
 // =========================
-function addYear(){
+document.getElementById("search").oninput = e=>{
+ render(e.target.value);
+};
 
- const y = prompt("年度");
- if(!y) return;
+// =========================
+// 追加
+// =========================
+function addCompany(){
 
- db.ref("companies/"+id+"/years/"+y).set({
-  status:"",
-  amount:0,
-  notes:""
- });
+const name = prompt("企業名");
+if(!name) return;
 
- load();
+const id = Date.now();
+
+db.ref("companies/"+id).set({
+ id:id,
+ name:name,
+ address:prompt("住所"),
+ email:prompt("メール"),
+ phone:prompt("電話"),
+ map:prompt("GoogleMap URL"),
+ notes:prompt("備考"),
+ years:{
+  "2025":""
+ }
+});
+
+alert("追加完了");
 }
 
 // =========================
-// 編集
+// CSV
 // =========================
-function editCompany(){
+function exportCSV(){
 
- db.ref("companies/"+id).once("value", snap=>{
-  const c = snap.val();
+let csv="企業名,住所,メール,電話\n";
 
-  db.ref("companies/"+id).update({
-   name:prompt("企業名",c.name),
-   address:prompt("住所",c.address),
-   email:prompt("メール",c.email),
-   phone:prompt("電話",c.phone),
-   map:prompt("GoogleMap",c.map),
-   notes:prompt("備考",c.notes)
-  });
+Object.values(allCompanies).forEach(c=>{
+csv += `"${c.name||""}","${c.address||""}","${c.email||""}","${c.phone||""}"\n`;
+});
 
-  load();
- });
+const blob = new Blob([csv]);
+const a=document.createElement("a");
+a.href=URL.createObjectURL(blob);
+a.download="companies.csv";
+a.click();
 
 }
-
-// =========================
-// 削除
-// =========================
-function deleteCompany(){
-
- if(!confirm("削除？")) return;
-
- db.ref("companies/"+id).remove()
- .then(()=>location.href="index.html");
-
-}
-
-load();
 
 </script>
 
