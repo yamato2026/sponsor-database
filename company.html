@@ -142,6 +142,22 @@ db.ref("companies/"+id).remove()
 
 }
 
+function deleteCompany(){
+
+const id = new URLSearchParams(location.search).get("id");
+
+if(!confirm("本当に削除する？")) return;
+
+db.ref("companies/"+id).remove()
+.then(()=>{
+ alert("削除しました");
+ location.href="index.html";
+})
+.catch(()=>{
+ alert("削除失敗");
+});
+
+}
 </script>
 
 </body>
