@@ -8,10 +8,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <style>
-
-/* =========================
-  全体レイアウト
-========================= */
 body{
  font-family:sans-serif;
  margin:0;
@@ -27,16 +23,8 @@ body{
  box-shadow:0 2px 10px rgba(0,0,0,0.1);
 }
 
-/* =========================
-  ヘッダー
-========================= */
-h1{
- margin-top:0;
-}
+h1{margin-top:0;}
 
-/* =========================
-  ボタン
-========================= */
 .top-bar{
  display:flex;
  flex-wrap:wrap;
@@ -53,35 +41,16 @@ button{
  cursor:pointer;
 }
 
-button:hover{
- background:#1a5dc9;
-}
+button:hover{background:#1a5dc9;}
 
-.delete-btn{
- background:red;
-}
+.delete-btn{background:red;}
 
-/* =========================
-  基本情報
-========================= */
-.info{
- margin-bottom:20px;
-}
+.info p{margin:5px 0;}
 
-.info p{
- margin:5px 0;
-}
-
-/* =========================
-  テーブル
-========================= */
 table{
  width:100%;
  border-collapse:collapse;
  margin-top:10px;
- background:white;
- border-radius:8px;
- overflow:hidden;
 }
 
 th{
@@ -99,9 +68,6 @@ tr:hover{
  background:#f1f5ff;
 }
 
-/* =========================
-  入力
-========================= */
 input,select{
  width:100%;
  padding:6px;
@@ -110,18 +76,12 @@ input,select{
  box-sizing:border-box;
 }
 
-/* =========================
-  横スクロール備考
-========================= */
 .note-scroll{
  max-width:300px;
  overflow-x:auto;
  white-space:nowrap;
 }
 
-/* =========================
-  削除ボタン小
-========================= */
 .small-btn{
  background:red;
  color:white;
@@ -130,9 +90,7 @@ input,select{
  border-radius:4px;
  cursor:pointer;
 }
-.small-btn:hover{
- opacity:0.8;
-}
+.small-btn:hover{opacity:0.8;}
 
 </style>
 
@@ -142,9 +100,6 @@ input,select{
 
 <div class="container">
 
-<!-- =========================
-  ボタンエリア
-========================= -->
 <div class="top-bar">
 <button onclick="location.href='index.html'">←戻る</button>
 <button onclick="editCompany()">編集</button>
@@ -152,9 +107,6 @@ input,select{
 <button onclick="addYear()">年度追加</button>
 </div>
 
-<!-- =========================
-  基本情報
-========================= -->
 <h1 id="name"></h1>
 
 <div class="info">
@@ -164,9 +116,6 @@ input,select{
 <p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
 </div>
 
-<!-- =========================
-  年度テーブル
-========================= -->
 <h2>協賛履歴</h2>
 
 <table>
@@ -184,9 +133,6 @@ input,select{
 <tbody id="yearTable"></tbody>
 </table>
 
-<!-- =========================
-  企業備考
-========================= -->
 <h2>備考（企業全体）</h2>
 <p id="notes"></p>
 
@@ -209,13 +155,22 @@ const db = firebase.database();
 const id = new URLSearchParams(location.search).get("id");
 
 // =========================
-// 読み込み
+// 読み込み（安全版）
 // =========================
 function load(){
 
+ if(!id){
+  alert("IDがありません");
+  return;
+ }
+
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
-  if(!c) return;
+
+  if(!c){
+   alert("データなし");
+   return;
+  }
 
   document.getElementById("name").textContent = c.name || "";
   document.getElementById("address").textContent = c.address || "";
@@ -235,8 +190,6 @@ function load(){
    const d = years[y] || {status:"",amount:0,notes:""};
 
    const tr = document.createElement("tr");
-
-   let locked = true;
 
    const tdYear = document.createElement("td");
    tdYear.textContent = y;
@@ -294,6 +247,8 @@ function load(){
    tdNotes.appendChild(wrap);
 
    const tdEdit = document.createElement("td");
+
+   let locked = true;
 
    const editBtn = document.createElement("button");
    editBtn.textContent = "編集";
@@ -364,6 +319,7 @@ function editCompany(){
 
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
+  if(!c) return;
 
   db.ref("companies/"+id).update({
    name:prompt("企業名",c.name),
