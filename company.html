@@ -16,7 +16,6 @@ button:hover{background:#1a5dc9;}
 .status-maybe{color:orange;font-weight:bold;}
 .status-no{color:red;font-weight:bold;}
 </style>
-
 </head>
 
 <body>
@@ -34,7 +33,7 @@ button:hover{background:#1a5dc9;}
 
 <p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
 
- <h2>協賛履歴（クリックで変更）</h2>
+<h2>協賛履歴（クリックで変更）</h2>
 
 <table border="1">
 <tr><th>年度</th><th>状況</th></tr>
@@ -44,7 +43,6 @@ button:hover{background:#1a5dc9;}
 <tr><td>2027</td><td id="y2027" onclick="changeStatus('2027')"></td></tr>
 <tr><td>2028</td><td id="y2028" onclick="changeStatus('2028')"></td></tr>
 <tr><td>2029</td><td id="y2029" onclick="changeStatus('2029')"></td></tr>
-
 </table>
 
 <h2>備考</h2>
@@ -63,7 +61,10 @@ const firebaseConfig = {
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+ firebase.initializeApp(firebaseConfig);
+}
+
 const db = firebase.database();
 
 // ID取得
@@ -81,11 +82,10 @@ function load(){
   document.getElementById("phone").textContent = c.phone || "";
   document.getElementById("notes").textContent = c.notes || "";
   document.getElementById("maplink").href = c.map || "#";
-   const years = c.years || {};
 
-　 const years = c.years || {};
+  const years = c.years || {};
 
-　 Object.keys(years).sort().forEach(y=>{
+  Object.keys(years).sort().forEach(y=>{
    const cell = document.getElementById("y"+y);
    if(!cell) return;
 
@@ -100,6 +100,43 @@ function load(){
   });
 
  });
+}
+
+// 状態変更
+function changeStatus(year){
+
+ db.ref("companies/"+id).once("value", snap=>{
+
+  const c = snap.val() || {};
+  let years = c.years || {};
+
+  if(Object.keys(years).length === 0){
+   years = {"2025":""};
+  }
+
+  const current = years[year] || "";
+
+  let next = "";
+
+  if(current==="") next="○";
+  else if(current==="○") next="△";
+  else if(current==="△") next="×";
+  else if(current==="×") next="";
+
+  db.ref("companies/"+id+"/years/"+year).set(next);
+
+  load();
+
+ });
+}
+
+// 年度追加
+function addYear(){
+ const year = prompt("追加する年度（例：2030）");
+ if(!year) return;
+
+ db.ref("companies/"+id+"/years/"+year).set("");
+ load();
 }
 
 // 編集
@@ -141,88 +178,19 @@ function editCompany(){
  });
 }
 
-// 削除（重複なしの正しいやつ）
+// 削除
 function deleteCompany(){
-
  if(!confirm("本当に削除する？")) return;
 
  db.ref("companies/"+id).remove()
  .then(()=>{
   alert("削除しました");
   location.href="index.html";
- })
- .catch(()=>{
-  alert("削除失敗");
  });
-
 }
 
 // 初期表示
 load();
-function changeStatus(year){
-
- db.ref("companies/"+id).once("value", snap=>{
-
-  const c = snap.val();
-
-  // 現在の状態
-  const current = c.years?.[year] || "";
-
-  let next = "";
-
-  // 状態を順番に変える
-  if(current==="") next="○";
-  else if(current==="○") next="△";
-  else if(current==="△") next="×";
-  else if(current==="×") next="";
-
-  // Firebaseに保存
-  db.ref("companies/"+id+"/years/"+year).set(next);
-
-  // 再読み込み
-  load();
-
-  function addYear(){
-
-const year = prompt("追加する年度（例：2030）");
-if(!year) return;
-
-// 追加
-db.ref("companies/"+id+"/years/"+year).set("");
-
-load();
-
-}
-
- });
-}
-
-function changeStatus(year){
-
- db.ref("companies/"+id).once("value", snap=>{
-
-  const c = snap.val() || {};
-  let years = c.years || {};
-
-  if(Object.keys(years).length === 0){
-   years = {"2025":""};
-  }
-
-  const current = years[year] || "";
-
-  let next = "";
-
-  if(current==="") next="○";
-  else if(current==="○") next="△";
-  else if(current==="△") next="×";
-  else if(current==="×") next="";
-
-  db.ref("companies/"+id+"/years/"+year).set(next);
-
-  load();
-
- });
-}
 
 </script>
 
