@@ -90,10 +90,6 @@ input,select{
  <button onclick="uploadPDF()">PDFアップロード</button>
 </div>
 
-<!-- ★PDFプレビュー追加 -->
-<h3>PDFプレビュー</h3>
-<iframe id="pdfView" width="100%" height="600px" style="border:1px solid #ccc;"></iframe>
-
 <h2>協賛履歴</h2>
 
 <table>
@@ -149,15 +145,17 @@ function load(){
   document.getElementById("maplink").href =
    (c.map||"").startsWith("http") ? c.map : "#";
 
-  // PDF
+  // ★PDF（完全修正）
   const pdf = document.getElementById("pdfLink");
   const url = c.pdfUrl || "";
 
-  pdf.href = url;
-  pdf.textContent = url ? "PDFダウンロード" : "未登録";
-
-  // ★プレビュー表示
-  document.getElementById("pdfView").src = url;
+  if(url){
+   pdf.href = url;
+   pdf.textContent = "PDFダウンロード";
+  }else{
+   pdf.href = "#";
+   pdf.textContent = "未登録";
+  }
 
   // 年度
   const years = c.years || {};
@@ -172,11 +170,9 @@ function load(){
 
    let locked = true;
 
-   // 年度
    const tdYear = document.createElement("td");
    tdYear.textContent = y;
 
-   // 状態
    const tdStatus = document.createElement("td");
    const select = document.createElement("select");
 
@@ -197,7 +193,6 @@ function load(){
 
    tdStatus.appendChild(select);
 
-   // 金額
    const tdAmount = document.createElement("td");
    const inputA = document.createElement("input");
    inputA.type = "number";
@@ -211,7 +206,6 @@ function load(){
 
    tdAmount.appendChild(inputA);
 
-   // 備考
    const tdNotes = document.createElement("td");
 
    const wrap = document.createElement("div");
@@ -231,7 +225,6 @@ function load(){
    wrap.appendChild(inputN);
    tdNotes.appendChild(wrap);
 
-   // 編集
    const tdEdit = document.createElement("td");
 
    const editBtn = document.createElement("button");
@@ -251,7 +244,6 @@ function load(){
 
    tdEdit.appendChild(editBtn);
 
-   // 削除
    const tdDel = document.createElement("td");
 
    const btn = document.createElement("button");
@@ -281,7 +273,7 @@ function load(){
 }
 
 // =========================
-// PDFアップロード
+// PDFアップロード（原因切り分け強化）
 // =========================
 function uploadPDF(){
 
@@ -296,21 +288,28 @@ function uploadPDF(){
 
   try{
 
-   const path = `pdfs/${id}/${file.name}`;
+   const path = `pdfs/${id}/${Date.now()}_${file.name}`;
    const ref = storage.ref(path);
 
+   console.log("upload start");
+
    await ref.put(file);
+
    const url = await ref.getDownloadURL();
+
+   console.log("PDF URL:",url);
 
    await db.ref("companies/"+id).update({
     pdfUrl:url
    });
 
+   alert("PDF登録完了");
+
    load();
 
   }catch(err){
-   alert("PDF失敗");
    console.error(err);
+   alert("PDFアップロード失敗（Storageルール or 設定確認）");
   }
 
  };
@@ -336,7 +335,7 @@ function addYear(){
 }
 
 // =========================
-// 編集
+// 企業編集
 // =========================
 function editCompany(){
 
