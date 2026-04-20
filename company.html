@@ -24,6 +24,7 @@ button:hover{background:#1a5dc9;}
 <button onclick="location.href='index.html'">←戻る</button>
 <button onclick="editCompany()">編集</button>
 <button onclick="deleteCompany()" class="delete-btn">削除</button>
+<button onclick="addYear()">年度追加</button>
 
 <h1 id="name"></h1>
 
@@ -82,7 +83,9 @@ function load(){
   document.getElementById("maplink").href = c.map || "#";
    const years = c.years || {};
 
-  ["2025","2026","2027","2028","2029"].forEach(y=>{
+　 const years = c.years || {};
+
+　 Object.keys(years).sort().forEach(y=>{
    const cell = document.getElementById("y"+y);
    if(!cell) return;
 
@@ -178,6 +181,18 @@ function changeStatus(year){
 
   // 再読み込み
   load();
+
+  function addYear(){
+
+const year = prompt("追加する年度（例：2030）");
+if(!year) return;
+
+// 追加
+db.ref("companies/"+id+"/years/"+year).set("");
+
+load();
+
+}
 
  });
 }
