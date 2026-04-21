@@ -48,10 +48,15 @@ button{
  color:white;
  cursor:pointer;
  width:100%;
+ margin-top:5px;
 }
 
 button:hover{
  background:#5c1620;
+}
+
+.logout{
+ background:#555;
 }
 
 ul{
@@ -84,13 +89,14 @@ li{
 
 <button onclick="login()">ログイン</button>
 <button onclick="register()">新規登録</button>
-
 </div>
 
 <!-- メイン -->
 <div id="main" style="display:none">
 
 <h1>協賛企業データベース</h1>
+
+<button class="logout" onclick="logout()">ログアウト</button>
 
 <input type="text" id="search" placeholder="検索">
 
@@ -104,7 +110,7 @@ li{
 
 <script>
 
-// Firebase
+// Firebase設定
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
@@ -118,18 +124,18 @@ const auth = firebase.auth();
 let allCompanies = {};
 
 // =========================
-// ドメインチェック
+// メール制限
 // =========================
 function isSchoolMail(email){
  return email.endsWith("@stu.yamato-u.ac.jp");
 }
 
 // =========================
-// 新規登録
+// 新規登録（→強制ログアウト）
 // =========================
 function register(){
 
- const email = document.getElementById("email").value;
+ const email = document.getElementById("email").value.trim();
  const pass = document.getElementById("password").value;
 
  if(!isSchoolMail(email)){
@@ -139,7 +145,11 @@ function register(){
 
  auth.createUserWithEmailAndPassword(email, pass)
  .then(()=>{
-  alert("登録完了！ログインされました");
+  alert("登録完了！ログインしてください");
+
+  // ★ここが今回のポイント
+  auth.signOut();
+
  })
  .catch(e=>{
   alert(e.message);
@@ -152,7 +162,7 @@ function register(){
 // =========================
 function login(){
 
- const email = document.getElementById("email").value;
+ const email = document.getElementById("email").value.trim();
  const pass = document.getElementById("password").value;
 
  if(!isSchoolMail(email)){
@@ -165,6 +175,13 @@ function login(){
   alert("ログイン失敗");
  });
 
+}
+
+// =========================
+// ログアウト
+// =========================
+function logout(){
+ auth.signOut();
 }
 
 // =========================
