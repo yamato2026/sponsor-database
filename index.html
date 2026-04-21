@@ -2,90 +2,152 @@
 <html>
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>協賛企業データベース</title>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
 <style>
+
+/* =========================
+  ベース
+========================= */
 body{
- font-family:sans-serif;
- margin:40px;
- background:#f5f5f5;
+ font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+ margin:0;
+ background:#f4f6f9;
 }
 
+.container{
+ max-width:900px;
+ margin:auto;
+ padding:20px;
+}
+
+/* =========================
+  タイトル
+========================= */
 h1{
- margin-bottom:20px;
+ font-size:28px;
+ margin-bottom:15px;
+}
+
+/* =========================
+  入力
+========================= */
+input{
+ width:100%;
+ padding:12px;
+ border-radius:8px;
+ border:1px solid #ccc;
+ margin-bottom:10px;
+ font-size:16px;
+}
+
+/* =========================
+  ボタン
+========================= */
+.btns{
+ display:flex;
+ flex-wrap:wrap;
+ gap:10px;
+ margin-bottom:15px;
 }
 
 button{
- padding:10px;
- margin:5px;
+ padding:12px 16px;
  border:none;
+ border-radius:8px;
  background:#2c7be5;
  color:white;
- border-radius:5px;
+ font-size:14px;
  cursor:pointer;
 }
-button:hover{background:#1a5dc9;}
 
-input{
- padding:10px;
- width:100%;
- max-width:400px;
- margin-bottom:10px;
- border-radius:5px;
- border:1px solid #ccc;
+button:hover{
+ background:#1a5dc9;
 }
 
+/* =========================
+  リスト
+========================= */
 ul{
  list-style:none;
  padding:0;
+ margin:0;
 }
 
-li{
+/* カード */
+.card{
  background:white;
+ border-radius:12px;
  padding:15px;
- margin-bottom:10px;
- border-radius:8px;
- box-shadow:0 2px 5px rgba(0,0,0,0.1);
+ margin-bottom:12px;
+ box-shadow:0 2px 8px rgba(0,0,0,0.08);
  display:flex;
  justify-content:space-between;
  align-items:center;
- cursor:pointer;
+ gap:10px;
 }
 
-li:hover{
- background:#f0f4ff;
-}
-
-.status{
+/* 左（名前） */
+.card-name{
+ font-size:18px;
  font-weight:bold;
 }
 
-.status-ok{color:green;}
-.status-maybe{color:orange;}
-.status-no{color:red;}
+/* 右（ステータス） */
+.card-status{
+ font-size:14px;
+ font-weight:bold;
+}
+
+/* 色 */
+.status-ok{color:#2ecc71;}
+.status-maybe{color:#f39c12;}
+.status-no{color:#e74c3c;}
+
+/* =========================
+  スマホ調整
+========================= */
+@media (max-width:600px){
+
+ h1{
+  font-size:22px;
+ }
+
+ .card{
+  flex-direction:column;
+  align-items:flex-start;
+ }
+
+ .card-status{
+  font-size:16px;
+ }
+
+ button{
+  width:100%;
+ }
+
+}
+
 </style>
 </head>
 
 <body>
 
-<div id="login">
-<h2>ログイン</h2>
-<input type="password" id="password">
-<button onclick="login()">ログイン</button>
-</div>
-
-<div id="main" style="display:none">
+<div class="container">
 
 <h1>協賛企業データベース</h1>
 
 <input type="text" id="search" placeholder="検索">
 
+<div class="btns">
 <button onclick="addCompany()">＋追加</button>
-<button onclick="exportCSV()">CSV出力</button>
+<button onclick="exportCSV()">CSV</button>
 <button onclick="location.href='totals.html'">協賛金額</button>
+</div>
 
 <ul id="companyList"></ul>
 
@@ -106,32 +168,6 @@ if (!firebase.apps.length) {
 
 const db = firebase.database();
 
-// =========================
-// ログイン
-// =========================
-function login(){
- const pass = document.getElementById("password").value;
-
- if(pass==="joie"){
-  localStorage.setItem("loggedin","true");
-  document.getElementById("login").style.display="none";
-  document.getElementById("main").style.display="block";
-  loadCompanies();
- }else{
-  alert("パスワードが違います");
- }
-}
-
-// 自動ログイン
-if(localStorage.getItem("loggedin")==="true"){
- document.getElementById("login").style.display="none";
- document.getElementById("main").style.display="block";
- loadCompanies();
-}
-
-// =========================
-// データ読み込み
-// =========================
 function loadCompanies(){
  db.ref("companies").on("value", snap=>{
   allCompanies = snap.val() || {};
@@ -139,15 +175,10 @@ function loadCompanies(){
  });
 }
 
-// =========================
-// 表示（修正版）
-// =========================
 function render(filter=""){
 
 const list = document.getElementById("companyList");
 list.innerHTML="";
-
-if(!allCompanies) return;
 
 Object.values(allCompanies)
 .filter(c=>c && c.name && c.name.includes(filter))
@@ -155,33 +186,31 @@ Object.values(allCompanies)
 
 if(!c.id) return;
 
-const li = document.createElement("li");
-
 let years = c.years || {};
 const latestYear = Object.keys(years).sort().slice(-1)[0];
 
-// ★ここが重要修正
 const data = latestYear ? years[latestYear] : {};
 const status = data.status || "";
-
-// ○ → 〇 に変換
 const displayStatus = status === "○" ? "〇" : status;
 
-let cls = "";
+let cls="";
 if(status==="○") cls="status-ok";
 if(status==="△") cls="status-maybe";
 if(status==="×") cls="status-no";
 
+const li = document.createElement("li");
+li.className="card";
+
 li.innerHTML = `
- <span>${c.name}</span>
- <span class="status ${cls}">
-  ${latestYear ? latestYear + ":" + (displayStatus || "未") : "未登録"}
- </span>
+ <div class="card-name">${c.name}</div>
+ <div class="card-status ${cls}">
+  ${latestYear ? latestYear + "：" + (displayStatus || "未") : "未登録"}
+ </div>
 `;
 
-li.addEventListener("click", ()=>{
- location.href = "company.html?id=" + c.id;
-});
+li.onclick = ()=>{
+ location.href="company.html?id="+c.id;
+};
 
 list.appendChild(li);
 
@@ -189,16 +218,10 @@ list.appendChild(li);
 
 }
 
-// =========================
-// 検索
-// =========================
 document.getElementById("search").oninput = e=>{
 render(e.target.value);
 };
 
-// =========================
-// 追加
-// =========================
 function addCompany(){
 
 const name = prompt("企業名");
@@ -209,11 +232,11 @@ const id = Date.now();
 db.ref("companies/"+id).set({
  id:id,
  name:name,
- address:prompt("住所"),
- email:prompt("メール"),
- phone:prompt("電話"),
- map:prompt("GoogleMap URL"),
- notes:prompt("備考"),
+ address:"",
+ email:"",
+ phone:"",
+ map:"",
+ notes:"",
  years:{
   "2025":{
    status:"",
@@ -226,9 +249,6 @@ db.ref("companies/"+id).set({
 alert("追加完了");
 }
 
-// =========================
-// CSV
-// =========================
 function exportCSV(){
 
 let csv="企業名,住所,メール,電話\n";
@@ -244,6 +264,8 @@ a.download="companies.csv";
 a.click();
 
 }
+
+loadCompanies();
 
 </script>
 
