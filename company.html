@@ -5,27 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>企業情報</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
-<!-- アイコン -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
 
-/* =========================
-  カラー
-========================= */
+/* ===== カラー ===== */
 :root{
  --main:#7a1f2b;
  --accent:#f4a62a;
- --sub:#f6d6d6;
 }
 
-/* =========================
-  全体
-========================= */
+/* ===== 全体 ===== */
 body{
  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
  margin:0;
@@ -38,17 +31,12 @@ body{
  padding:20px;
 }
 
-/* =========================
-  タイトル
-========================= */
+/* ===== タイトル ===== */
 h1{
  color:var(--main);
- margin-bottom:10px;
 }
 
-/* =========================
-  ボタン
-========================= */
+/* ===== ボタン ===== */
 .top-bar{
  display:flex;
  flex-wrap:wrap;
@@ -73,9 +61,7 @@ button:hover{
  background:#e74c3c;
 }
 
-/* =========================
-  カード
-========================= */
+/* ===== カード ===== */
 .card{
  background:white;
  padding:20px;
@@ -85,12 +71,18 @@ button:hover{
  border-left:6px solid var(--accent);
 }
 
-/* =========================
-  テーブル
-========================= */
+/* ===== テーブルラップ（←重要） ===== */
+.table-wrap{
+ width:100%;
+ overflow-x:auto;
+ -webkit-overflow-scrolling:touch;
+}
+
+/* ===== テーブル ===== */
 table{
  width:100%;
  border-collapse:collapse;
+ min-width:700px; /* ←これがポイント */
 }
 
 th{
@@ -108,9 +100,7 @@ tr:hover{
  background:#f1f5ff;
 }
 
-/* =========================
-  入力
-========================= */
+/* ===== 入力 ===== */
 input,select{
  width:100%;
  padding:6px;
@@ -118,14 +108,14 @@ input,select{
  border-radius:6px;
 }
 
-/* 横スクロール備考 */
+/* ===== 横スクロール備考 ===== */
 .note-scroll{
- max-width:250px;
+ max-width:200px;
  overflow-x:auto;
  white-space:nowrap;
 }
 
-/* 小ボタン */
+/* ===== 小ボタン ===== */
 .small-btn{
  background:#e74c3c;
  color:white;
@@ -134,12 +124,15 @@ input,select{
  border-radius:5px;
 }
 
-/* =========================
-  スマホ対応
-========================= */
+/* ===== スマホ ===== */
 @media (max-width:600px){
 
- table{
+ th, td{
+  font-size:12px;
+  padding:8px;
+ }
+
+ input{
   font-size:12px;
  }
 
@@ -156,7 +149,6 @@ input,select{
 
 <div class="container">
 
-<!-- ボタン -->
 <div class="top-bar">
 <button onclick="location.href='index.html'">
  <i class="fa-solid fa-arrow-left"></i> 戻る
@@ -175,7 +167,6 @@ input,select{
 </button>
 </div>
 
-<!-- 基本情報 -->
 <div class="card">
 <h1><i class="fa-solid fa-building"></i> <span id="name"></span></h1>
 
@@ -185,9 +176,11 @@ input,select{
 <p><b>地図：</b><a id="maplink" target="_blank">開く</a></p>
 </div>
 
-<!-- 年度 -->
 <div class="card">
 <h2>協賛履歴</h2>
+
+<!-- ★ここが重要 -->
+<div class="table-wrap">
 
 <table>
 <thead>
@@ -203,9 +196,10 @@ input,select{
 
 <tbody id="yearTable"></tbody>
 </table>
+
+</div>
 </div>
 
-<!-- 備考 -->
 <div class="card">
 <h2>備考（企業全体）</h2>
 <p id="notes"></p>
@@ -227,9 +221,6 @@ if(!firebase.apps.length){
 const db = firebase.database();
 const id = new URLSearchParams(location.search).get("id");
 
-/* =========================
-  読み込み
-========================= */
 function load(){
 
  db.ref("companies/"+id).once("value", snap=>{
@@ -259,13 +250,12 @@ function load(){
    const tdYear = document.createElement("td");
    tdYear.textContent = y;
 
-   // 状態
    const tdStatus = document.createElement("td");
    const select = document.createElement("select");
 
    ["","〇","△","×"].forEach(v=>{
     const opt = document.createElement("option");
-    opt.value = v === "〇" ? "○" : v;
+    opt.value = v==="〇" ? "○" : v;
     opt.textContent = v;
     select.appendChild(opt);
    });
@@ -280,7 +270,6 @@ function load(){
 
    tdStatus.appendChild(select);
 
-   // 金額
    const tdAmount = document.createElement("td");
    const inputA = document.createElement("input");
    inputA.type="number";
@@ -294,7 +283,6 @@ function load(){
 
    tdAmount.appendChild(inputA);
 
-   // 備考
    const tdNotes = document.createElement("td");
    const wrap = document.createElement("div");
    wrap.className="note-scroll";
@@ -312,7 +300,6 @@ function load(){
    wrap.appendChild(inputN);
    tdNotes.appendChild(wrap);
 
-   // 編集
    const tdEdit = document.createElement("td");
    const editBtn = document.createElement("button");
    editBtn.textContent="編集";
@@ -327,7 +314,6 @@ function load(){
 
    tdEdit.appendChild(editBtn);
 
-   // 削除
    const tdDel = document.createElement("td");
    const delBtn = document.createElement("button");
    delBtn.textContent="削除";
@@ -355,9 +341,6 @@ function load(){
 
 }
 
-/* =========================
-  年度追加
-========================= */
 function addYear(){
  const y = prompt("年度");
  if(!y) return;
@@ -371,9 +354,6 @@ function addYear(){
  load();
 }
 
-/* =========================
-  編集
-========================= */
 function editCompany(){
  db.ref("companies/"+id).once("value", snap=>{
   const c = snap.val();
@@ -391,11 +371,8 @@ function editCompany(){
  });
 }
 
-/* =========================
-  削除
-========================= */
 function deleteCompany(){
- if(!confirm("本当に削除しますか？")) return;
+ if(!confirm("削除する？")) return;
 
  db.ref("companies/"+id).remove()
  .then(()=>location.href="index.html");
