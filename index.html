@@ -5,13 +5,26 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>協賛企業データベース</title>
 
+<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<!-- アイコン -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
 <style>
 
 /* =========================
-  ベース
+  カラー
+========================= */
+:root{
+ --main:#7a1f2b;
+ --accent:#f4a62a;
+ --sub:#f6d6d6;
+}
+
+/* =========================
+  全体
 ========================= */
 body{
  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
@@ -30,11 +43,12 @@ body{
 ========================= */
 h1{
  font-size:28px;
+ color:var(--main);
  margin-bottom:15px;
 }
 
 /* =========================
-  入力
+  検索
 ========================= */
 input{
  width:100%;
@@ -59,26 +73,24 @@ button{
  padding:12px 16px;
  border:none;
  border-radius:8px;
- background:#2c7be5;
+ background:var(--main);
  color:white;
  font-size:14px;
  cursor:pointer;
 }
 
 button:hover{
- background:#1a5dc9;
+ background:#5c1620;
 }
 
 /* =========================
-  リスト
+  カード
 ========================= */
 ul{
  list-style:none;
  padding:0;
- margin:0;
 }
 
-/* カード */
 .card{
  background:white;
  border-radius:12px;
@@ -88,28 +100,40 @@ ul{
  display:flex;
  justify-content:space-between;
  align-items:center;
- gap:10px;
+ border-left:6px solid var(--accent);
 }
 
-/* 左（名前） */
+.card:hover{
+ transform:translateY(-2px);
+ transition:0.2s;
+}
+
 .card-name{
  font-size:18px;
  font-weight:bold;
 }
 
-/* 右（ステータス） */
 .card-status{
  font-size:14px;
  font-weight:bold;
 }
 
-/* 色 */
+/* =========================
+  状態色
+========================= */
 .status-ok{color:#2ecc71;}
 .status-maybe{color:#f39c12;}
 .status-no{color:#e74c3c;}
 
 /* =========================
-  スマホ調整
+  アイコン
+========================= */
+.icon{
+ margin-right:6px;
+}
+
+/* =========================
+  スマホ対応
 ========================= */
 @media (max-width:600px){
 
@@ -139,14 +163,25 @@ ul{
 
 <div class="container">
 
-<h1>協賛企業データベース</h1>
+<h1>
+ <i class="fa-solid fa-database icon"></i>
+ 協賛企業データベース
+</h1>
 
 <input type="text" id="search" placeholder="検索">
 
 <div class="btns">
-<button onclick="addCompany()">＋追加</button>
-<button onclick="exportCSV()">CSV</button>
-<button onclick="location.href='totals.html'">協賛金額</button>
+<button onclick="addCompany()">
+ <i class="fa-solid fa-plus icon"></i>追加
+</button>
+
+<button onclick="exportCSV()">
+ <i class="fa-solid fa-file-csv icon"></i>CSV
+</button>
+
+<button onclick="location.href='totals.html'">
+ <i class="fa-solid fa-yen-sign icon"></i>金額
+</button>
 </div>
 
 <ul id="companyList"></ul>
@@ -168,6 +203,9 @@ if (!firebase.apps.length) {
 
 const db = firebase.database();
 
+/* =========================
+  読み込み
+========================= */
 function loadCompanies(){
  db.ref("companies").on("value", snap=>{
   allCompanies = snap.val() || {};
@@ -175,6 +213,9 @@ function loadCompanies(){
  });
 }
 
+/* =========================
+  表示
+========================= */
 function render(filter=""){
 
 const list = document.getElementById("companyList");
@@ -191,6 +232,8 @@ const latestYear = Object.keys(years).sort().slice(-1)[0];
 
 const data = latestYear ? years[latestYear] : {};
 const status = data.status || "";
+
+// ○ → 〇
 const displayStatus = status === "○" ? "〇" : status;
 
 let cls="";
@@ -202,8 +245,12 @@ const li = document.createElement("li");
 li.className="card";
 
 li.innerHTML = `
- <div class="card-name">${c.name}</div>
+ <div class="card-name">
+  <i class="fa-solid fa-building icon"></i>${c.name}
+ </div>
+
  <div class="card-status ${cls}">
+  <i class="fa-solid fa-circle-check icon"></i>
   ${latestYear ? latestYear + "：" + (displayStatus || "未") : "未登録"}
  </div>
 `;
@@ -218,10 +265,16 @@ list.appendChild(li);
 
 }
 
+/* =========================
+  検索
+========================= */
 document.getElementById("search").oninput = e=>{
 render(e.target.value);
 };
 
+/* =========================
+  追加
+========================= */
 function addCompany(){
 
 const name = prompt("企業名");
@@ -249,6 +302,9 @@ db.ref("companies/"+id).set({
 alert("追加完了");
 }
 
+/* =========================
+  CSV
+========================= */
 function exportCSV(){
 
 let csv="企業名,住所,メール,電話\n";
