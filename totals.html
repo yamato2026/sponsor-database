@@ -3,28 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>協賛金額集計</title>
+<title>年度別 合計金額</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
-<!-- アイコン -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <style>
 
-/* =========================
-  カラー
-========================= */
-:root{
- --main:#7a1f2b;
- --accent:#f4a62a;
-}
-
-/* =========================
-  全体
-========================= */
 body{
  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
  margin:0;
@@ -37,94 +23,51 @@ body{
  padding:20px;
 }
 
-/* =========================
-  タイトル
-========================= */
-h1{
- color:var(--main);
-}
-
-/* =========================
-  ボタン
-========================= */
-button{
- padding:10px 15px;
- border:none;
- border-radius:8px;
- background:var(--main);
- color:white;
- cursor:pointer;
-}
-
-button:hover{
- background:#5c1620;
-}
-
-/* =========================
-  カード
-========================= */
 .card{
  background:white;
  padding:20px;
  border-radius:12px;
- box-shadow:0 2px 8px rgba(0,0,0,0.08);
- margin-top:20px;
- border-left:6px solid var(--accent);
+ box-shadow:0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* =========================
-  テーブルラップ（重要）
-========================= */
+h1{
+ margin-top:0;
+}
+
+button{
+ padding:10px;
+ border:none;
+ border-radius:6px;
+ background:#7a1f2b;
+ color:white;
+ cursor:pointer;
+ margin-bottom:10px;
+}
+
 .table-wrap{
- width:100%;
  overflow-x:auto;
- -webkit-overflow-scrolling:touch;
 }
 
-/* =========================
-  テーブル
-========================= */
 table{
  width:100%;
  border-collapse:collapse;
- min-width:400px; /* ←スマホ対策 */
+ min-width:400px;
 }
 
 th{
- background:var(--main);
+ background:#7a1f2b;
  color:white;
  padding:10px;
 }
 
 td{
- padding:12px;
+ padding:10px;
  border-bottom:1px solid #eee;
  text-align:center;
 }
 
-tr:hover{
- background:#f1f5ff;
-}
-
 .total{
  font-weight:bold;
- font-size:18px;
-}
-
-/* =========================
-  スマホ
-========================= */
-@media (max-width:600px){
-
- th, td{
-  font-size:14px;
-  padding:8px;
- }
-
- button{
-  width:100%;
- }
-
 }
 
 </style>
@@ -134,19 +77,12 @@ tr:hover{
 
 <div class="container">
 
-<button onclick="location.href='index.html'">
- <i class="fa-solid fa-arrow-left"></i> 戻る
-</button>
-
-<h1>
- <i class="fa-solid fa-yen-sign"></i>
- 年度別 協賛金額
-</h1>
+<button onclick="location.href='index.html'">← 戻る</button>
 
 <div class="card">
+<h1>年度別 合計金額</h1>
 
 <div class="table-wrap">
-
 <table>
 <thead>
 <tr>
@@ -154,10 +90,8 @@ tr:hover{
 <th>合計金額</th>
 </tr>
 </thead>
-
 <tbody id="totalTable"></tbody>
 </table>
-
 </div>
 
 </div>
@@ -171,63 +105,75 @@ const firebaseConfig = {
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
-if (!firebase.apps.length) {
- firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 
 const db = firebase.database();
+const auth = firebase.auth();
 
-/* =========================
-  合計計算
-========================= */
+// =========================
+// ログインチェック（未ログインなら戻す）
+// =========================
+auth.onAuthStateChanged(user=>{
+ if(!user){
+  location.href="index.html";
+ }else{
+  loadTotals();
+ }
+});
+
+// =========================
+// 合計計算
+// =========================
 function loadTotals(){
 
- db.ref("companies").on("value", snapshot => {
+ db.ref("companies").on("value", snap=>{
 
-  const all = snapshot.val() || {};
+  const companies = snap.val() || {};
   let totals = {};
 
-  Object.values(all).forEach(c=>{
+  Object.values(companies).forEach(c=>{
    if(!c.years) return;
 
    Object.entries(c.years).forEach(([year,data])=>{
-
     const amount = Number(data.amount || 0);
-
-    if(!totals[year]) totals[year] = 0;
-
-    totals[year] += amount;
-
+    if(!totals[year]) totals[year]=0;
+    totals[year]+=amount;
    });
-
   });
 
-  const table = document.getElementById("totalTable");
-  table.innerHTML = "";
-
-  Object.keys(totals).sort().forEach(year=>{
-
-   const tr = document.createElement("tr");
-
-   const tdYear = document.createElement("td");
-   tdYear.textContent = year;
-
-   const tdAmount = document.createElement("td");
-   tdAmount.textContent = totals[year].toLocaleString() + " 円";
-   tdAmount.className = "total";
-
-   tr.appendChild(tdYear);
-   tr.appendChild(tdAmount);
-
-   table.appendChild(tr);
-
-  });
+  render(totals);
 
  });
 
 }
 
-loadTotals();
+// =========================
+// 表示
+// =========================
+function render(totals){
+
+ const table = document.getElementById("totalTable");
+ table.innerHTML="";
+
+ Object.keys(totals).sort().forEach(year=>{
+
+  const tr=document.createElement("tr");
+
+  const tdYear=document.createElement("td");
+  tdYear.textContent=year;
+
+  const tdAmount=document.createElement("td");
+  tdAmount.textContent=totals[year].toLocaleString()+"円";
+  tdAmount.className="total";
+
+  tr.appendChild(tdYear);
+  tr.appendChild(tdAmount);
+
+  table.appendChild(tr);
+
+ });
+
+}
 
 </script>
 
