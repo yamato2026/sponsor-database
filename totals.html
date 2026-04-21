@@ -15,7 +15,7 @@
 <style>
 
 /* =========================
-  カラー（統一）
+  カラー
 ========================= */
 :root{
  --main:#7a1f2b;
@@ -73,11 +73,21 @@ button:hover{
 }
 
 /* =========================
+  テーブルラップ（重要）
+========================= */
+.table-wrap{
+ width:100%;
+ overflow-x:auto;
+ -webkit-overflow-scrolling:touch;
+}
+
+/* =========================
   テーブル
 ========================= */
 table{
  width:100%;
  border-collapse:collapse;
+ min-width:400px; /* ←スマホ対策 */
 }
 
 th{
@@ -105,9 +115,16 @@ tr:hover{
   スマホ
 ========================= */
 @media (max-width:600px){
- th,td{
+
+ th, td{
   font-size:14px;
+  padding:8px;
  }
+
+ button{
+  width:100%;
+ }
+
 }
 
 </style>
@@ -128,6 +145,8 @@ tr:hover{
 
 <div class="card">
 
+<div class="table-wrap">
+
 <table>
 <thead>
 <tr>
@@ -138,6 +157,8 @@ tr:hover{
 
 <tbody id="totalTable"></tbody>
 </table>
+
+</div>
 
 </div>
 
