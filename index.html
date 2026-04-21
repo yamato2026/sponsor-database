@@ -8,24 +8,10 @@
 <!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-
-<!-- アイコン -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
 <style>
 
-/* =========================
-  カラー
-========================= */
-:root{
- --main:#7a1f2b;
- --accent:#f4a62a;
- --sub:#f6d6d6;
-}
-
-/* =========================
-  全体
-========================= */
 body{
  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
  margin:0;
@@ -38,122 +24,48 @@ body{
  padding:20px;
 }
 
-/* =========================
-  タイトル
-========================= */
-h1{
- font-size:28px;
- color:var(--main);
- margin-bottom:15px;
+.card{
+ background:white;
+ padding:20px;
+ border-radius:12px;
+ box-shadow:0 2px 8px rgba(0,0,0,0.1);
+ margin-top:20px;
 }
 
-/* =========================
-  検索
-========================= */
 input{
  width:100%;
- padding:12px;
- border-radius:8px;
- border:1px solid #ccc;
- margin-bottom:10px;
- font-size:16px;
-}
-
-/* =========================
-  ボタン
-========================= */
-.btns{
- display:flex;
- flex-wrap:wrap;
- gap:10px;
- margin-bottom:15px;
+ padding:10px;
+ margin:10px 0;
+ border:1px solid #ddd;
+ border-radius:6px;
 }
 
 button{
- padding:12px 16px;
+ padding:10px;
  border:none;
- border-radius:8px;
- background:var(--main);
+ border-radius:6px;
+ background:#7a1f2b;
  color:white;
- font-size:14px;
  cursor:pointer;
+ width:100%;
 }
 
 button:hover{
  background:#5c1620;
 }
 
-/* =========================
-  カード
-========================= */
 ul{
  list-style:none;
  padding:0;
 }
 
-.card{
+li{
  background:white;
- border-radius:12px;
  padding:15px;
- margin-bottom:12px;
- box-shadow:0 2px 8px rgba(0,0,0,0.08);
- display:flex;
- justify-content:space-between;
- align-items:center;
- border-left:6px solid var(--accent);
-}
-
-.card:hover{
- transform:translateY(-2px);
- transition:0.2s;
-}
-
-.card-name{
- font-size:18px;
- font-weight:bold;
-}
-
-.card-status{
- font-size:14px;
- font-weight:bold;
-}
-
-/* =========================
-  状態色
-========================= */
-.status-ok{color:#2ecc71;}
-.status-maybe{color:#f39c12;}
-.status-no{color:#e74c3c;}
-
-/* =========================
-  アイコン
-========================= */
-.icon{
- margin-right:6px;
-}
-
-/* =========================
-  スマホ対応
-========================= */
-@media (max-width:600px){
-
- h1{
-  font-size:22px;
- }
-
- .card{
-  flex-direction:column;
-  align-items:flex-start;
- }
-
- .card-status{
-  font-size:16px;
- }
-
- button{
-  width:100%;
- }
-
+ margin-top:10px;
+ border-radius:8px;
+ cursor:pointer;
+ box-shadow:0 2px 5px rgba(0,0,0,0.08);
 }
 
 </style>
@@ -163,165 +75,189 @@ ul{
 
 <div class="container">
 
-<h1>
- <i class="fa-solid fa-database icon"></i>
- 協賛企業データベース
-</h1>
+<!-- ログイン -->
+<div id="login" class="card">
+<h2>ログイン / 新規登録</h2>
+
+<input type="email" id="email" placeholder="学校メール（@stu.yamato-u.ac.jp）">
+<input type="password" id="password" placeholder="パスワード">
+
+<button onclick="login()">ログイン</button>
+<button onclick="register()">新規登録</button>
+
+</div>
+
+<!-- メイン -->
+<div id="main" style="display:none">
+
+<h1>協賛企業データベース</h1>
 
 <input type="text" id="search" placeholder="検索">
 
-<div class="btns">
-<button onclick="addCompany()">
- <i class="fa-solid fa-plus icon"></i>追加
-</button>
-
-<button onclick="exportCSV()">
- <i class="fa-solid fa-file-csv icon"></i>CSV
-</button>
-
-<button onclick="location.href='totals.html'">
- <i class="fa-solid fa-yen-sign icon"></i>金額
-</button>
-</div>
+<button onclick="addCompany()">＋追加</button>
 
 <ul id="companyList"></ul>
 
 </div>
 
+</div>
+
 <script>
 
-let allCompanies = {};
-
+// Firebase
 const firebaseConfig = {
  apiKey: "AIzaSyBMTL3U-88HpEXXW2jbW9QzmTk-JO17AcI",
  databaseURL: "https://teienn-kyousan-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
-if (!firebase.apps.length) {
- firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 
 const db = firebase.database();
+const auth = firebase.auth();
 
-/* =========================
-  読み込み
-========================= */
+let allCompanies = {};
+
+// =========================
+// ドメインチェック
+// =========================
+function isSchoolMail(email){
+ return email.endsWith("@stu.yamato-u.ac.jp");
+}
+
+// =========================
+// 新規登録
+// =========================
+function register(){
+
+ const email = document.getElementById("email").value;
+ const pass = document.getElementById("password").value;
+
+ if(!isSchoolMail(email)){
+  alert("学校メールのみ登録できます");
+  return;
+ }
+
+ auth.createUserWithEmailAndPassword(email, pass)
+ .then(()=>{
+  alert("登録完了！ログインされました");
+ })
+ .catch(e=>{
+  alert(e.message);
+ });
+
+}
+
+// =========================
+// ログイン
+// =========================
+function login(){
+
+ const email = document.getElementById("email").value;
+ const pass = document.getElementById("password").value;
+
+ if(!isSchoolMail(email)){
+  alert("学校メールのみログインできます");
+  return;
+ }
+
+ auth.signInWithEmailAndPassword(email, pass)
+ .catch(()=>{
+  alert("ログイン失敗");
+ });
+
+}
+
+// =========================
+// ログイン状態監視
+// =========================
+auth.onAuthStateChanged(user => {
+
+ if(user){
+  document.getElementById("login").style.display="none";
+  document.getElementById("main").style.display="block";
+  loadCompanies();
+ }else{
+  document.getElementById("login").style.display="block";
+  document.getElementById("main").style.display="none";
+ }
+
+});
+
+// =========================
+// 企業読み込み
+// =========================
 function loadCompanies(){
+
  db.ref("companies").on("value", snap=>{
   allCompanies = snap.val() || {};
   render();
  });
+
 }
 
-/* =========================
-  表示
-========================= */
+// =========================
+// 表示
+// =========================
 function render(filter=""){
 
-const list = document.getElementById("companyList");
-list.innerHTML="";
+ const list = document.getElementById("companyList");
+ list.innerHTML="";
 
-Object.values(allCompanies)
-.filter(c=>c && c.name && c.name.includes(filter))
-.forEach(c=>{
+ Object.values(allCompanies)
+ .filter(c=>c.name && c.name.includes(filter))
+ .forEach(c=>{
 
-if(!c.id) return;
+  const li=document.createElement("li");
 
-let years = c.years || {};
-const latestYear = Object.keys(years).sort().slice(-1)[0];
+  li.textContent = c.name;
 
-const data = latestYear ? years[latestYear] : {};
-const status = data.status || "";
+  li.onclick=()=>{
+   location.href="company.html?id="+c.id;
+  };
 
-// ○ → 〇
-const displayStatus = status === "○" ? "〇" : status;
+  list.appendChild(li);
 
-let cls="";
-if(status==="○") cls="status-ok";
-if(status==="△") cls="status-maybe";
-if(status==="×") cls="status-no";
-
-const li = document.createElement("li");
-li.className="card";
-
-li.innerHTML = `
- <div class="card-name">
-  <i class="fa-solid fa-building icon"></i>${c.name}
- </div>
-
- <div class="card-status ${cls}">
-  <i class="fa-solid fa-circle-check icon"></i>
-  ${latestYear ? latestYear + "：" + (displayStatus || "未") : "未登録"}
- </div>
-`;
-
-li.onclick = ()=>{
- location.href="company.html?id="+c.id;
-};
-
-list.appendChild(li);
-
-});
+ });
 
 }
 
-/* =========================
-  検索
-========================= */
+// =========================
+// 検索
+// =========================
 document.getElementById("search").oninput = e=>{
-render(e.target.value);
+ render(e.target.value);
 };
 
-/* =========================
-  追加
-========================= */
+// =========================
+// 企業追加
+// =========================
 function addCompany(){
 
-const name = prompt("企業名");
-if(!name) return;
+ const name = prompt("企業名");
+ if(!name) return;
 
-const id = Date.now();
+ const id = Date.now();
 
-db.ref("companies/"+id).set({
- id:id,
- name:name,
- address:"",
- email:"",
- phone:"",
- map:"",
- notes:"",
- years:{
-  "2025":{
-   status:"",
-   amount:0,
-   notes:""
+ db.ref("companies/"+id).set({
+  id:id,
+  name:name,
+  address:prompt("住所"),
+  email:prompt("メール"),
+  phone:prompt("電話"),
+  map:prompt("GoogleMap URL"),
+  notes:prompt("備考"),
+  years:{
+   "2025":{
+    status:"",
+    amount:0,
+    notes:""
+   }
   }
- }
-});
+ });
 
-alert("追加完了");
-}
-
-/* =========================
-  CSV
-========================= */
-function exportCSV(){
-
-let csv="企業名,住所,メール,電話\n";
-
-Object.values(allCompanies).forEach(c=>{
-csv += `"${c.name||""}","${c.address||""}","${c.email||""}","${c.phone||""}"\n`;
-});
-
-const blob = new Blob([csv]);
-const a=document.createElement("a");
-a.href=URL.createObjectURL(blob);
-a.download="companies.csv";
-a.click();
+ alert("追加OK");
 
 }
-
-loadCompanies();
 
 </script>
 
